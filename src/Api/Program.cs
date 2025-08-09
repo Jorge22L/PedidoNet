@@ -19,6 +19,7 @@ builder.Services.AddControllers();
 // Agregando servicios de infraestructura
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IPedidoService, PedidoService>();
 
 
 
