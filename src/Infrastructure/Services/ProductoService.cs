@@ -24,7 +24,7 @@ namespace Infrastructure.Services
         public async Task<bool> ActualizarProductoAsync(int id, ActualizarProductoCommand command)
         {
             var producto = await _context.Productos.FindAsync(id);
-            if (producto != null) return false;
+            if (producto == null) return false;
 
             producto.Codigo = command.Codigo;
             producto.Nombre = command.Nombre;
