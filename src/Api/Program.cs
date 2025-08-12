@@ -2,6 +2,7 @@ using Application.Interfaces;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Middleware;
 using Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +34,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+app.UseGlobalExceptionHandler();
 
 // Usar controladores
 app.MapControllers();
