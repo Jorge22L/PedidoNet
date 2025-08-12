@@ -3,9 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using Application;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Application.Exceptions;
 
 namespace Middleware
 {
@@ -34,16 +36,30 @@ namespace Middleware
         {
             var response = context.Response;
             response.ContentType = "application/json";
-            response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-            var errorResponse = new
+            var statusCode = HttpStatusCode.InternalServerError;
+            object errorResponse;
+
+            switch (exception)
             {
-                message = exception.Message,
-                detail = exception.InnerException?.Message
-            };
+                case ValidationException validationEx:
+                    statusCode = HttpStatusCode.BadRequest;
+                    errorResponse = new { message = validationEx.Message, errors = validationEx.Errors };
+                    break;
 
+                case NotFoundException notFoundEx:
+                    statusCode = HttpStatusCode.NotFound;
+                    errorResponse = new { message = notFoundEx.Message };
+                    break;
+
+                default:
+                    errorResponse = new { message = exception.Message };
+                    break;
+;
+            }
+
+            response.StatusCode = (int)statusCode;
             var json = JsonSerializer.Serialize(errorResponse);
-
             return response.WriteAsync(json);
         }
     }
