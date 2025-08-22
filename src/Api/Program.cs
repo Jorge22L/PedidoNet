@@ -9,6 +9,7 @@ using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Middleware;
 using Persistence;
 using System.Reflection;
 
@@ -38,6 +39,7 @@ builder.Services.AddScoped<IValidator<ActualizarProductoCommand>,  ActualizarPro
 // Agregando servicios de infraestructura
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IPedidoService, PedidoService>();
 
 
 
@@ -51,6 +53,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+app.UseGlobalExceptionHandler();
 
 // Usar controladores
 app.MapControllers();
