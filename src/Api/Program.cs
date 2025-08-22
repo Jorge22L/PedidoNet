@@ -1,11 +1,17 @@
+using Application.Clientes.Commands;
 using Application.Common.Mappings;
 using Application.Interfaces;
+using Application.Producto.Commands;
+using Application.Producto.Commands.Validators;
+using FluentValidation;
 using Infrastructure.Services;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Middleware;
 using Persistence;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +32,10 @@ builder.Services.AddSwaggerGen();
 // Evitar minimal APIs
 builder.Services.AddControllers();
 
+builder.Services.AddScoped<IValidator<CrearProductoCommand>, CrearProductoCommandValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CrearProductoCommandValidator>();
+builder.Services.AddScoped<IValidator<ActualizarProductoCommand>,  ActualizarProductoCommandValidator>();
+
 // Agregando servicios de infraestructura
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
@@ -43,6 +53,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+app.UseGlobalExceptionHandler();
 
 // Usar controladores
 app.MapControllers();

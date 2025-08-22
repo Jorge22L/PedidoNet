@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Domain.Entities;
+using Application.Exceptions;
 
 namespace Infrastructure.Services
 {
@@ -32,7 +33,11 @@ namespace Infrastructure.Services
             // Solo permitir actualizar pedidos pendientes
             if (pedido.Estado != "Pendiente")
             {
-                throw new InvalidOperationException("Solo se pueden actualizar pedidos pendientes");
+                throw new ValidationException(new Dictionary<string, string[]>
+                {
+                    {"Mensaje", new[] { "Solo se pueden actualizar pedidos pendientes "} }
+                });
+                
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
