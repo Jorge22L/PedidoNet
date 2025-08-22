@@ -11,16 +11,20 @@ using System.Text;
 using System.Threading.Tasks;
 using Domain.Entities;
 using Application.Exceptions;
+using MapsterMapper;
+using Mapster;
 
 namespace Infrastructure.Services
 {
     public class PedidoService : IPedidoService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
 
-        public PedidoService(ApplicationDbContext context)
+        public PedidoService(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
         public async Task<bool> ActualizarPedidoAsync(int id, ActualizarPedidoCommand command)
         {
@@ -56,11 +60,13 @@ namespace Infrastructure.Services
 
 
                 // Actualizar campos básicos
-                if (command.ClienteId > 0) pedido.ClienteId = command.ClienteId;
-                if (command.Fecha.HasValue) pedido.Fecha = command.Fecha.Value;
-                if (command.Descuento.HasValue) pedido.Descuento = command.Descuento.Value;
-                if (!string.IsNullOrEmpty(command.FormaPago)) pedido.FormaPago = command.FormaPago;
-                if (!string.IsNullOrEmpty(command.Estado)) pedido.Estado = command.Estado;
+                //if (command.ClienteId > 0) pedido.ClienteId = command.ClienteId;
+                //if (command.Fecha.HasValue) pedido.Fecha = command.Fecha.Value;
+                //if (command.Descuento.HasValue) pedido.Descuento = command.Descuento.Value;
+                //if (!string.IsNullOrEmpty(command.FormaPago)) pedido.FormaPago = command.FormaPago;
+                //if (!string.IsNullOrEmpty(command.Estado)) pedido.Estado = command.Estado;
+
+                _mapper.Map(command, pedido);
 
                 // Actualizar detalles si se proporcionan
                 if (command.Detalles != null && command.Detalles.Any())
@@ -220,14 +226,16 @@ namespace Infrastructure.Services
                 }
 
                 // Crear el pedido
-                var pedido = new Pedido
-                {
-                    ClienteId = command.ClienteId,
-                    Fecha = command.Fecha,
-                    FormaPago = command.FormaPago,
-                    Estado = "Pendiente",
-                    Descuento = command.Descuento
-                };
+                //var pedido = new Pedido
+                //{
+                //    ClienteId = command.ClienteId,
+                //    Fecha = command.Fecha,
+                //    FormaPago = command.FormaPago,
+                //    Estado = "Pendiente",
+                //    Descuento = command.Descuento
+                //};
+                var pedido = _mapper.Map<Pedido>(command);
+                pedido.Estado = "Pendiente";
 
                 // Crear los detalles
                 foreach (var detalleCommand in command.Detalles)
@@ -307,38 +315,46 @@ namespace Infrastructure.Services
 
         public async Task<List<PedidoDto>> ObtenerPorClienteAsync(int clienteId)
         {
+            //var pedidos = await _context.Pedidos
+            //    .Include(p => p.Cliente)
+            //    .Include(p => p.Detalles)
+            //        .ThenInclude(d => d.Producto)
+            //    .Where(p => p.ClienteId == clienteId)
+            //    .Select(p => new PedidoDto
+            //    {
+            //        PedidoId = p.PedidoId,
+            //        ClienteId = p.ClienteId,
+            //        ClienteNombre = p.Cliente.Nombre,
+            //        Fecha = p.Fecha,
+            //        SubTotal = p.SubTotal,
+            //        IVA = p.IVA,
+            //        Descuento = p.Descuento,
+            //        Total = p.Total,
+            //        FormaPago = p.FormaPago,
+            //        Estado = p.Estado,
+            //        Detalles = p.Detalles.Select(d => new DetallePedidoDto
+            //        {
+            //            DetalleId = d.DetalleId,
+            //            ProductoId = d.ProductoId,
+            //            ProductoNombre = d.Producto.Nombre,
+            //            ProductoCodigo = d.Producto.Codigo,
+            //            Cantidad = d.Cantidad,
+            //            PrecioUnitario = d.PrecioUnitario,
+            //            Descuento = d.Descuento,
+            //            TieneIVA = d.TieneIVA,
+            //            TieneISC = d.Producto.TieneISC ?? false,
+            //            SubtotalLinea = d.SubtotalLinea,
+            //            IVA = d.IVA,
+            //        }).ToList()
+            //    })
+            //    .ToListAsync();
+
             var pedidos = await _context.Pedidos
                 .Include(p => p.Cliente)
                 .Include(p => p.Detalles)
-                    .ThenInclude(d => d.Producto)
+                .ThenInclude(d => d.Producto)
                 .Where(p => p.ClienteId == clienteId)
-                .Select(p => new PedidoDto
-                {
-                    PedidoId = p.PedidoId,
-                    ClienteId = p.ClienteId,
-                    ClienteNombre = p.Cliente.Nombre,
-                    Fecha = p.Fecha,
-                    SubTotal = p.SubTotal,
-                    IVA = p.IVA,
-                    Descuento = p.Descuento,
-                    Total = p.Total,
-                    FormaPago = p.FormaPago,
-                    Estado = p.Estado,
-                    Detalles = p.Detalles.Select(d => new DetallePedidoDto
-                    {
-                        DetalleId = d.DetalleId,
-                        ProductoId = d.ProductoId,
-                        ProductoNombre = d.Producto.Nombre,
-                        ProductoCodigo = d.Producto.Codigo,
-                        Cantidad = d.Cantidad,
-                        PrecioUnitario = d.PrecioUnitario,
-                        Descuento = d.Descuento,
-                        TieneIVA = d.TieneIVA,
-                        TieneISC = d.Producto.TieneISC ?? false,
-                        SubtotalLinea = d.SubtotalLinea,
-                        IVA = d.IVA,
-                    }).ToList()
-                })
+                .ProjectToType<PedidoDto>()
                 .ToListAsync();
 
             return pedidos;
@@ -346,74 +362,89 @@ namespace Infrastructure.Services
 
         public async Task<PedidoDto>? ObtenerPorIdAsync(int id)
         {
+            //var pedido = await _context.Pedidos
+            //    .Include(p => p.Cliente)
+            //    .Include(p => p.Detalles)
+            //    .ThenInclude(d => d.Producto)
+            //    .Select(p => new PedidoDto
+            //    {
+            //        PedidoId = p.PedidoId,
+            //        ClienteId = p.ClienteId,
+            //        ClienteNombre = p.Cliente.Nombre,
+            //        Fecha = p.Fecha,
+            //        SubTotal = p.SubTotal,
+            //        IVA = p.IVA,
+            //        Descuento = p.Descuento,
+            //        Total = p.Total,
+            //        FormaPago = p.FormaPago,
+            //        Estado = p.Estado,
+            //        Detalles = p.Detalles.Select(d => new DetallePedidoDto
+            //        {
+            //            DetalleId = d.DetalleId,
+            //            ProductoId = d.ProductoId,
+            //            ProductoNombre = d.Producto.Nombre,
+            //            ProductoCodigo = d.Producto.Codigo,
+            //            Cantidad = d.Cantidad,
+            //            PrecioUnitario = d.PrecioUnitario,
+            //            Descuento = d.Descuento,
+            //            TieneIVA = d.TieneIVA,
+            //            TieneISC = d.Producto.TieneISC ?? false,
+            //            SubtotalLinea = d.SubtotalLinea,
+            //            IVA = d.IVA
+            //        }).ToList()
+            //    }).FirstOrDefaultAsync();
+
             var pedido = await _context.Pedidos
                 .Include(p => p.Cliente)
                 .Include(p => p.Detalles)
-                .ThenInclude(d => d.Producto)
-                .Select(p => new PedidoDto
-                {
-                    PedidoId = p.PedidoId,
-                    ClienteId = p.ClienteId,
-                    ClienteNombre = p.Cliente.Nombre,
-                    Fecha = p.Fecha,
-                    SubTotal = p.SubTotal,
-                    IVA = p.IVA,
-                    Descuento = p.Descuento,
-                    Total = p.Total,
-                    FormaPago = p.FormaPago,
-                    Estado = p.Estado,
-                    Detalles = p.Detalles.Select(d => new DetallePedidoDto
-                    {
-                        DetalleId = d.DetalleId,
-                        ProductoId = d.ProductoId,
-                        ProductoNombre = d.Producto.Nombre,
-                        ProductoCodigo = d.Producto.Codigo,
-                        Cantidad = d.Cantidad,
-                        PrecioUnitario = d.PrecioUnitario,
-                        Descuento = d.Descuento,
-                        TieneIVA = d.TieneIVA,
-                        TieneISC = d.Producto.TieneISC ?? false,
-                        SubtotalLinea = d.SubtotalLinea,
-                        IVA = d.IVA
-                    }).ToList()
-                }).FirstOrDefaultAsync();
+                    .ThenInclude(d => d.Producto)
+                .Where(p => p.PedidoId == id)
+                .ProjectToType<PedidoDto>() // Usar ProjectToType de Mapster
+                .FirstOrDefaultAsync();
 
             return pedido;
         }
 
         public async Task<List<PedidoDto>> ObtenerTodosAsync()
         {
+            //var pedidos = await _context.Pedidos
+            //    .Include(p => p.Cliente)
+            //    .Include(p => p.Detalles)
+            //    .ThenInclude(d => d.Producto)
+            //    .Select(p => new PedidoDto
+            //    {
+            //        PedidoId = p.PedidoId,
+            //        ClienteId = p.ClienteId,
+            //        ClienteNombre = p.Cliente.Nombre,
+            //        Fecha = p.Fecha,
+            //        SubTotal = p.SubTotal,
+            //        IVA = p.IVA,
+            //        Descuento = p.Descuento,
+            //        Total = p.Total,
+            //        FormaPago = p.FormaPago,
+            //        Estado = p.Estado,
+            //        Detalles = p.Detalles.Select(d => new DetallePedidoDto
+            //        {
+            //            DetalleId = d.DetalleId,
+            //            ProductoId = d.ProductoId,
+            //            ProductoNombre = d.Producto.Nombre,
+            //            ProductoCodigo = d.Producto.Codigo,
+            //            Cantidad = d.Cantidad,
+            //            PrecioUnitario = d.PrecioUnitario,
+            //            Descuento = d.Descuento,
+            //            TieneIVA = d.TieneIVA,
+            //            TieneISC = d.Producto.TieneISC ?? false,
+            //            SubtotalLinea = d.SubtotalLinea,
+            //            IVA = d.IVA
+            //        }).ToList()
+            //    }).ToListAsync();
+
             var pedidos = await _context.Pedidos
                 .Include(p => p.Cliente)
                 .Include(p => p.Detalles)
-                .ThenInclude(d => d.Producto)
-                .Select(p => new PedidoDto
-                {
-                    PedidoId = p.PedidoId,
-                    ClienteId = p.ClienteId,
-                    ClienteNombre = p.Cliente.Nombre,
-                    Fecha = p.Fecha,
-                    SubTotal = p.SubTotal,
-                    IVA = p.IVA,
-                    Descuento = p.Descuento,
-                    Total = p.Total,
-                    FormaPago = p.FormaPago,
-                    Estado = p.Estado,
-                    Detalles = p.Detalles.Select(d => new DetallePedidoDto
-                    {
-                        DetalleId = d.DetalleId,
-                        ProductoId = d.ProductoId,
-                        ProductoNombre = d.Producto.Nombre,
-                        ProductoCodigo = d.Producto.Codigo,
-                        Cantidad = d.Cantidad,
-                        PrecioUnitario = d.PrecioUnitario,
-                        Descuento = d.Descuento,
-                        TieneIVA = d.TieneIVA,
-                        TieneISC = d.Producto.TieneISC ?? false,
-                        SubtotalLinea = d.SubtotalLinea,
-                        IVA = d.IVA
-                    }).ToList()
-                }).ToListAsync();
+                    .ThenInclude(d => d.Producto)
+                .ProjectToType<PedidoDto>() // Usar ProjectToType de Mapster
+                .ToListAsync();
 
             return pedidos;
         }
