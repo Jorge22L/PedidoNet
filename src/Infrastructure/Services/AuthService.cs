@@ -240,5 +240,22 @@ namespace Infrastructure.Services
 
             return (tokenString, expiraEn);
         }
+
+        public async Task<bool> RevokeTokenAsync(RefreshTokenRequest request)
+        {
+            var hash = HashToken(request.RefreshToken);
+            var token = await _context.RefreshTokens.FirstOrDefaultAsync(x => x.TokenHash == hash);
+
+            if(token is null || token.RevocadoEn is not null)
+            {
+                return false;
+            }
+
+            token.RevocadoEn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
     }
 }

@@ -9,5 +9,6 @@ namespace Application.Interfaces
     {
         Task<LoginResponse?> LoginAsync(LoginRequest request);
         Task<LoginResponse?> RefreshTokenAsync(RefreshTokenRequest request);
+        Task<bool> RevokeTokenAsync(RefreshTokenRequest request);
     }
 }

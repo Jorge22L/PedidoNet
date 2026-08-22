@@ -58,5 +58,19 @@ namespace Api.Controllers
                 data = response
             });
         }
+
+        [AllowAnonymous]
+        [HttpPost("revoke")]
+        public async Task<IActionResult> Revoke(RefreshTokenRequest request)
+        {
+            var result = await _authService.RevokeTokenAsync(request);
+
+            if (!result)
+            {
+                return BadRequest();
+            }
+
+            return NoContent();
+        }
     }
 }
