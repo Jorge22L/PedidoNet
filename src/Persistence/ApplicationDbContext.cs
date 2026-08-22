@@ -17,6 +17,7 @@ namespace Persistence
         public DbSet<Pedido> Pedidos => Set<Pedido>();
         public DbSet<DetallePedido> DetallePedidos => Set<DetallePedido>();
         public DbSet<Usuario> Usuarios => Set<Usuario>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

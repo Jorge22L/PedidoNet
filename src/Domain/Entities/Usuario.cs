@@ -11,5 +11,6 @@ namespace Domain.Entities
         public string PasswordHash { get; set; } = string.Empty;
         public string Rol { get; set; } = "Usuario";
         public bool Activo { get; set; } = true;
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

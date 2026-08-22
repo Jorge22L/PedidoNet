@@ -36,5 +36,27 @@ namespace Api.Controllers
                 data = response
             });
         }
+
+        [AllowAnonymous]
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh(RefreshTokenRequest request)
+        {
+            var response = await _authService.RefreshTokenAsync(request);
+
+            if(response is null)
+            {
+                return Unauthorized(new
+                {
+                    success = false,
+                    message = "Refresh token no válido o expirado"
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                data = response
+            });
+        }
     }
 }
