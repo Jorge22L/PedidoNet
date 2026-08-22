@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Pedidos.Commands;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +20,7 @@ namespace Api.Controllers
         /// <summary>
         /// Obtiene todos los pedidos
         /// </summary>
+        [Authorize(Policy = "Pedidos.Read")]
         [HttpGet]
         public async Task<IActionResult> Get()
         {

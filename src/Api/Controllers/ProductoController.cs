@@ -1,11 +1,13 @@
 ﻿using Application.Interfaces;
 using Application.Producto.Commands;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ProductoController : ControllerBase
@@ -37,6 +39,7 @@ namespace Api.Controllers
             return Ok(producto);
         }
 
+        [Authorize(Roles = "Administrador")]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CrearProductoCommand command)
         {

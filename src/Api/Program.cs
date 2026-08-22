@@ -15,6 +15,9 @@ using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +33,20 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Ingrese el token JWT"
+    });
+
+    
+});
 
 // Evitar minimal APIs
 builder.Services.AddControllers();
@@ -78,16 +94,53 @@ builder.Services
         };
     });
 
+// Crear Policy
+builder.Services.AddAuthorizationBuilder()
+                   // Crear Policy
+                   .AddPolicy("Pedidos.Read", policy =>
+        {
+            policy.RequireAuthenticatedUser();
+        })
+                   // Crear Policy
+                   .AddPolicy("Pedidos.Create", policy =>
+        {
+            policy.RequireRole("Administrador", "Vendedor");
+        });
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var existeAdmin = await context.Usuarios.AnyAsync(x => x.NombreUsuario == "admin");
+
+        if (!existeAdmin)
+        {
+            var usuario = new Usuario
+            {
+                NombreUsuario = "admin",
+                Rol = "Administrador",
+                Activo = true
+            };
+
+            var passwordHasher = new PasswordHasher<Usuario>();
+
+            usuario.PasswordHash = passwordHasher.HashPassword(usuario, "Admin123*");
+            context.Usuarios.Add(usuario);
+
+            await context.SaveChangesAsync();
+        }
+    }
+
+    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseGlobalExceptionHandler();

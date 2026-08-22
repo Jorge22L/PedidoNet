@@ -30,7 +30,7 @@ namespace Infrastructure.Services
         public async Task<LoginResponse?> LoginAsync(LoginRequest request)
         {
             var usuario = await _context.Usuarios.FirstOrDefaultAsync(
-                x => x.NombreUsuario == request.NombreUsusario &&
+                x => x.NombreUsuario == request.NombreUsuario &&
                 x.Activo);
 
             if (usuario == null) {
@@ -71,6 +71,7 @@ namespace Infrastructure.Services
                 new(ClaimTypes.Role, usuario.Rol),
 
                 new(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                
             };
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
