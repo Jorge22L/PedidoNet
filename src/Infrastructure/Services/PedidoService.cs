@@ -206,74 +206,87 @@ namespace Infrastructure.Services
 
             try
             {
-                // Verificar que cliente existe
+                // 1. Validad existencia del cliente
                 var cliente = await _context.Clientes.AnyAsync(c => c.ClienteId == command.ClienteId);
                 if (!cliente) throw new ArgumentException("El cliente especificado no existe");
 
-                // Verificar que todos los productos existen y tiene stock suficiente
+                // 2. Evitar productos repetidos
                 var productosIds = command.Detalles.Select(d => d.ProductoId).ToList();
+                if(productosIds.Count != productosIds.Distinct().Count())
+                {
+                    throw new ArgumentException("No se permite agregar el mismo producto más de una vez en el pedido");
+                }
+
+                // 3. Obtener productos desde DB
                 var productos = await _context.Productos
                     .Where(p => productosIds.Contains(p.ProductoId))
                     .ToListAsync();
 
                 if (productos.Count != productosIds.Count) throw new ArgumentException("Uno o más productos no existen");
 
-                // Verificar stock
-                foreach (var detalle in command.Detalles)
-                {
-                    var producto = productos.First(p => p.ProductoId == detalle.ProductoId);
-                    if (producto.Existencias < detalle.Cantidad) throw new ArgumentException($"Stock insuficiente para el producto {producto.Nombre}. Stock disponible: {producto.Existencias}");
-                }
+                // Diccionario para evitar First() repetidos
+                var productosPorId = productos.ToDictionary(p => p.ProductoId);
 
-                // Crear el pedido
-                //var pedido = new Pedido
-                //{
-                //    ClienteId = command.ClienteId,
-                //    Fecha = command.Fecha,
-                //    FormaPago = command.FormaPago,
-                //    Estado = "Pendiente",
-                //    Descuento = command.Descuento
-                //};
-                var pedido = _mapper.Map<Pedido>(command);
-                pedido.Estado = "Pendiente";
-
-                // Crear los detalles
+                // 4. Validar stock de TODOS los productos antes de modificar
                 foreach (var detalleCommand in command.Detalles)
                 {
-                    var producto = productos.First(p => p.ProductoId == detalleCommand.ProductoId);
+                    var producto = productosPorId[detalleCommand.ProductoId];
+                    if (producto.Existencias < detalleCommand.Cantidad)
+                    {
+                        throw new ArgumentException(
+                            $"Stock insuficiente para el producto {producto.Nombre}." +
+                            $"Stock disponible: {producto.Existencias}");
+                    }
+                }
+
+                // 5. Crear encabezado
+                var pedido = _mapper.Map<Pedido>(command);
+                pedido.Estado = "Pendiente";
+                pedido.Detalles.Clear();
+
+                // 6. Crear los detalles
+                foreach (var detalleCommand in command.Detalles)
+                {
+                    var producto = productosPorId[detalleCommand.ProductoId];
 
                     var detalle = new DetallePedido
                     {
                         ProductoId = detalleCommand.ProductoId,
                         Cantidad = detalleCommand.Cantidad,
-                        PrecioUnitario = detalleCommand.PrecioUnitario,
-                        Descuento = detalleCommand.Descuento,
-                        TieneIVA = detalleCommand.TieneIVA,
 
+                        // Nunca confiar en el precio enviado por el cliente
+                        PrecioUnitario = producto.PrecioVenta,
+                        Descuento = detalleCommand.Descuento,
+
+                        // El impuesto también viene del producto
+                        TieneIVA = producto.TieneIVA ?? false
                     };
 
                     pedido.Detalles.Add(detalle);
 
                     // Actualizar Stock
                     producto.Existencias -= detalleCommand.Cantidad;
-
+                }
+                    // 7. Calcular una sola vez
                     CalcularTotalesPedido(pedido);
 
+                    // 8. Persistir una sola vez
                     _context.Pedidos.Add(pedido);
+
                     await _context.SaveChangesAsync();
+
+                    // 9. Confirmar cuando TODO fue exitoso
                     await transaction.CommitAsync();
 
                     return pedido.PedidoId;
 
-                }
+                
             }
             catch (Exception)
             {
                 await transaction.RollbackAsync();
                 throw;
             }
-
-            return 0;
         }
 
         public async Task<bool> EliminarPedidoAsync(int id)
