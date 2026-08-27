@@ -16,7 +16,7 @@ namespace Application.Pedidos.Commands
         [StringLength(20)]
         public string? FormaPago { get; set; }
         [StringLength(20)]
-        public string? Estado {  get; set; } // Pendiente, Completado, Cancelado
+        
         public List<DetallePedidoCommand>? Detalles { get; set; }
     }
 }

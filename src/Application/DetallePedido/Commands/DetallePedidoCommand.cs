@@ -18,8 +18,6 @@ namespace Application.DetallePedido.Commands
         [Range(0.01, double.MaxValue, ErrorMessage = "El precio debe ser mayor a 0")]
         public decimal PrecioUnitario { get; set; }
         public decimal Descuento { get; set; }
-        public bool TieneIVA { get; set; }
-        public bool TieneISC { get; set; }
 
     }
 }

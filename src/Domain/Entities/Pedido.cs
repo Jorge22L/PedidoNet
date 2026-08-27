@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Domain.Constantes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,7 @@ namespace Domain.Entities
         public decimal Descuento { get; set; }
         public decimal Total { get; set; }
         public string FormaPago { get; set; } = "Contado"; // Valores válidos: Contado, Crédito, Transferencia, Tarjeta
-        public string Estado { get; set; } = "Pendiente"; // Valores válidos: Pendiente, Completado, Cancelado
+        public string Estado { get; set; } = EstadosPedido.Pendiente;
 
         public ICollection<DetallePedido> Detalles { get; set; } = new List<DetallePedido>();
     }
