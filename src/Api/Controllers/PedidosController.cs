@@ -12,7 +12,8 @@ namespace Api.Controllers
     {
         private readonly IPedidoService _pedidoService;
 
-        public PedidosController(IPedidoService pedidoService)
+        public PedidosController(
+            IPedidoService pedidoService)
         {
             _pedidoService = pedidoService;
         }
@@ -24,25 +25,15 @@ namespace Api.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            try
+            var pedidos =
+                await _pedidoService.ObtenerTodosAsync();
+
+            return Ok(new
             {
-                var pedidos = await _pedidoService.ObtenerTodosAsync();
-                return Ok(new
-                {
-                    success = true,
-                    data = pedidos,
-                    message = "Pedidos obtenidos correctamente"
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = "Error al obtener pedidos",
-                    error = ex.Message
-                });
-            }
+                success = true,
+                data = pedidos,
+                message = "Pedidos obtenidos correctamente"
+            });
         }
 
         /// <summary>
@@ -51,159 +42,119 @@ namespace Api.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
-            try
-            {
-                var pedido = await _pedidoService.ObtenerPorIdAsync(id);
-                if (pedido == null)
-                    return NotFound(new
-                    {
-                        success = false,
-                        message = "Pedido no encontrado"
-                    });
+            var pedido =
+                await _pedidoService.ObtenerPorIdAsync(id);
 
-                return Ok(new
-                {
-                    success = true,
-                    data = pedido,
-                    message = "Pedido encontrado"
-                });
-            }
-            catch (Exception ex)
+            if (pedido == null)
             {
-                return BadRequest(new
+                return NotFound(new
                 {
                     success = false,
-                    message = "Error al obtener el pedido",
-                    error = ex.Message
+                    message = "Pedido no encontrado"
                 });
             }
+
+            return Ok(new
+            {
+                success = true,
+                data = pedido,
+                message = "Pedido encontrado"
+            });
         }
 
         /// <summary>
         /// Obtiene todos los pedidos de un cliente específico
         /// </summary>
         [HttpGet("cliente/{clienteId}")]
-        public async Task<IActionResult> GetByCliente(int clienteId)
+        public async Task<IActionResult> GetByCliente(
+            int clienteId)
         {
-            try
+            var pedidos =
+                await _pedidoService
+                    .ObtenerPorClienteAsync(clienteId);
+
+            return Ok(new
             {
-                var pedidos = await _pedidoService.ObtenerPorClienteAsync(clienteId);
-                return Ok(new
-                {
-                    success = true,
-                    data = pedidos,
-                    message = $"Pedidos del cliente {clienteId} obtenidos correctamente"
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = "Error al obtener pedidos del cliente",
-                    error = ex.Message
-                });
-            }
+                success = true,
+                data = pedidos,
+                message =
+                    $"Pedidos del cliente {clienteId} obtenidos correctamente"
+            });
         }
 
         /// <summary>
         /// Crea un nuevo pedido
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] CrearPedidoCommand command)
+        public async Task<IActionResult> Post(
+            [FromBody] CrearPedidoCommand command)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "Datos inválidos",
-                        errors = ModelState
-                    });
-
-                var pedidoId = await _pedidoService.CrearPedidoAsync(command);
-                return CreatedAtAction(nameof(Get), new { id = pedidoId }, new
-                {
-                    success = true,
-                    data = new { id = pedidoId },
-                    message = "Pedido creado exitosamente"
-                });
-            }
-            catch (ArgumentException ex)
+            if (!ModelState.IsValid)
             {
                 return BadRequest(new
                 {
                     success = false,
-                    message = ex.Message
+                    message = "Datos inválidos",
+                    errors = ModelState
                 });
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
+
+            var pedidoId =
+                await _pedidoService
+                    .CrearPedidoAsync(command);
+
+            return CreatedAtAction(
+                nameof(Get),
+                new { id = pedidoId },
+                new
                 {
-                    success = false,
-                    message = "Error interno del servidor",
-                    error = ex.Message
+                    success = true,
+                    data = new
+                    {
+                        id = pedidoId
+                    },
+                    message = "Pedido creado exitosamente"
                 });
-            }
         }
 
         /// <summary>
         /// Actualiza un pedido existente
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] ActualizarPedidoCommand command)
+        public async Task<IActionResult> Put(
+            int id,
+            [FromBody] ActualizarPedidoCommand command)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "Datos inválidos",
-                        errors = ModelState
-                    });
-
-                var actualizado = await _pedidoService.ActualizarPedidoAsync(id, command);
-                if (!actualizado)
-                    return NotFound(new
-                    {
-                        success = false,
-                        message = "Pedido no encontrado"
-                    });
-
-                return Ok(new
-                {
-                    success = true,
-                    message = "Pedido actualizado correctamente"
-                });
-            }
-            catch (InvalidOperationException ex)
+            if (!ModelState.IsValid)
             {
                 return BadRequest(new
                 {
                     success = false,
-                    message = ex.Message
+                    message = "Datos inválidos",
+                    errors = ModelState
                 });
             }
-            catch (ArgumentException ex)
+
+            var actualizado =
+                await _pedidoService
+                    .ActualizarPedidoAsync(
+                        id,
+                        command);
+
+            if (!actualizado)
             {
-                return BadRequest(new
+                return NotFound(new
                 {
                     success = false,
-                    message = ex.Message
+                    message = "Pedido no encontrado"
                 });
             }
-            catch (Exception ex)
+
+            return Ok(new
             {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Error interno del servidor",
-                    error = ex.Message
-                });
-            }
+                success = true,
+                message = "Pedido actualizado correctamente"
+            });
         }
 
         /// <summary>
@@ -212,55 +163,78 @@ namespace Api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                var eliminado = await _pedidoService.EliminarPedidoAsync(id);
-                if (!eliminado)
-                    return NotFound(new
-                    {
-                        success = false,
-                        message = "Pedido no encontrado"
-                    });
+            var eliminado =
+                await _pedidoService
+                    .EliminarPedidoAsync(id);
 
-                return Ok(new
-                {
-                    success = true,
-                    message = "Pedido eliminado correctamente"
-                });
-            }
-            catch (InvalidOperationException ex)
+            if (!eliminado)
             {
-                return BadRequest(new
+                return NotFound(new
                 {
                     success = false,
-                    message = ex.Message
+                    message = "Pedido no encontrado"
                 });
             }
-            catch (Exception ex)
+
+            return Ok(new
             {
-                return StatusCode(500, new
+                success = true,
+                message = "Pedido eliminado correctamente"
+            });
+        }
+
+        /// <summary>
+        /// Completa un pedido
+        /// </summary>
+        [HttpPatch("{id}/completar")]
+        public async Task<IActionResult> Completar(
+            int id)
+        {
+            var completado =
+                await _pedidoService
+                    .CompletarPedidoAsync(id);
+
+            if (!completado)
+            {
+                return NotFound(new
                 {
                     success = false,
-                    message = "Error interno del servidor",
-                    error = ex.Message
+                    message = "Pedido no encontrado"
                 });
             }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Pedido completado correctamente"
+            });
         }
 
         /// <summary>
         /// Cancela un pedido
         /// </summary>
         [HttpPatch("{id}/cancelar")]
-        public async Task<IActionResult> Cancelar(int id)
+        public async Task<IActionResult> Cancelar(
+            int id)
         {
-            var resultado =
-        await _pedidoService
-            .CancelarPedidoAsync(id);
+            var cancelado =
+                await _pedidoService
+                    .CancelarPedidoAsync(id);
 
-            if (!resultado)
-                return NotFound();
+            if (!cancelado)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Pedido no encontrado"
+                });
+            }
 
-            return NoContent();
+            return Ok(new
+            {
+                success = true,
+                message = "Pedido cancelado correctamente"
+            });
         }
 
         /// <summary>
@@ -269,58 +243,56 @@ namespace Api.Controllers
         [HttpGet("estadisticas")]
         public async Task<IActionResult> GetEstadisticas()
         {
-            try
-            {
-                var pedidos = await _pedidoService.ObtenerTodosAsync();
+            var pedidos =
+                await _pedidoService.ObtenerTodosAsync();
 
-                var estadisticas = new
-                {
-                    TotalPedidos = pedidos.Count,
-                    PedidosPendientes = pedidos.Count(p => p.Estado == "Pendiente"),
-                    PedidosCompletados = pedidos.Count(p => p.Estado == "Completado"),
-                    PedidosCancelados = pedidos.Count(p => p.Estado == "Cancelado"),
-                    MontoTotalVentas = pedidos.Where(p => p.Estado == "Completado").Sum(p => p.Total),
-                    PromedioVentaPorPedido = pedidos.Where(p => p.Estado == "Completado").Any()
-                        ? pedidos.Where(p => p.Estado == "Completado").Average(p => p.Total)
+            var pedidosCompletados =
+                pedidos
+                    .Where(
+                        p => p.Estado == "Completado")
+                    .ToList();
+
+            var estadisticas = new
+            {
+                TotalPedidos =
+                    pedidos.Count,
+
+                PedidosPendientes =
+                    pedidos.Count(
+                        p => p.Estado == "Pendiente"),
+
+                PedidosCompletados =
+                    pedidosCompletados.Count,
+
+                PedidosCancelados =
+                    pedidos.Count(
+                        p => p.Estado == "Cancelado"),
+
+                MontoTotalVentas =
+                    pedidosCompletados
+                        .Sum(p => p.Total),
+
+                PromedioVentaPorPedido =
+                    pedidosCompletados.Count > 0
+                        ? pedidosCompletados
+                            .Average(p => p.Total)
                         : 0
-                };
+            };
 
-                return Ok(new
-                {
-                    success = true,
-                    data = estadisticas,
-                    message = "Estadísticas obtenidas correctamente"
-                });
-            }
-            catch (Exception ex)
+            return Ok(new
             {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Error al obtener estadísticas",
-                    error = ex.Message
-                });
-            }
-        }
-
-        [HttpPatch("{id:int}/completar")]
-        public async Task<IActionResult> Completar(
-    int id)
-        {
-            var resultado =
-                await _pedidoService
-                    .CompletarPedidoAsync(id);
-
-            if (!resultado)
-                return NotFound();
-
-            return NoContent();
+                success = true,
+                data = estadisticas,
+                message =
+                    "Estadísticas obtenidas correctamente"
+            });
         }
     }
 
     public class CambiarEstadoRequest
     {
-        public string Estado { get; set; } = string.Empty;
+        public string Estado { get; set; }
+            = string.Empty;
     }
 
 }

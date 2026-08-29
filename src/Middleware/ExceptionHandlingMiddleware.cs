@@ -1,12 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using Application;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Application.Exceptions;
 using Domain.Exceptions;
 
@@ -34,6 +27,26 @@ namespace Middleware
                     StatusCodes.Status422UnprocessableEntity,
                     ex.Message);
             }
+            catch (BusinessRuleException ex)
+            {
+                await WriteResponseAsync(context,
+                    StatusCodes.Status422UnprocessableEntity,
+                    ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                await WriteResponseAsync(
+                    context,
+                    StatusCodes.Status404NotFound,
+                    ex.Message);
+            }
+            catch (ConflictException ex)
+            {
+                await WriteResponseAsync(
+                    context,
+                    StatusCodes.Status409Conflict,
+                    ex.Message);
+            }
             catch (ArgumentException ex)
             {
                 await WriteResponseAsync(
@@ -55,37 +68,6 @@ namespace Middleware
                     StatusCodes.Status500InternalServerError,
                     "Ocurrió un error interno.");
             }
-        }
-
-        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
-        {
-            var response = context.Response;
-            response.ContentType = "application/json";
-
-            var statusCode = HttpStatusCode.InternalServerError;
-            object errorResponse;
-
-            switch (exception)
-            {
-                case ValidationException validationEx:
-                    statusCode = HttpStatusCode.BadRequest;
-                    errorResponse = new { message = validationEx.Message, errors = validationEx.Errors };
-                    break;
-
-                case NotFoundException notFoundEx:
-                    statusCode = HttpStatusCode.NotFound;
-                    errorResponse = new { message = notFoundEx.Message };
-                    break;
-
-                default:
-                    errorResponse = new { message = exception.Message };
-                    break;
-;
-            }
-
-            response.StatusCode = (int)statusCode;
-            var json = JsonSerializer.Serialize(errorResponse);
-            return response.WriteAsync(json);
         }
 
         private static async Task WriteResponseAsync(HttpContext context,

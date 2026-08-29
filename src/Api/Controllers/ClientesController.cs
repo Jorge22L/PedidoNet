@@ -62,7 +62,7 @@ namespace Api.Controllers
                 return NotFound();
             }
 
-            return Ok(eliminado);
+            return NoContent();
         }
     }
 }

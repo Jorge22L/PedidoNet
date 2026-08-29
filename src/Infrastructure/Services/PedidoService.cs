@@ -56,8 +56,7 @@ namespace Infrastructure.Services
 
                 if (!clienteExiste)
                 {
-                    throw new ArgumentException(
-                        "El cliente especificado no existe.");
+                    throw new NotFoundException("El cliente especificado no existe");
                 }
 
                 var productosIds =
