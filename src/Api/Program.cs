@@ -37,20 +37,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Ingrese el token JWT"
-    });
-
-    
-});
 
 // Evitar minimal APIs
 builder.Services.AddControllers();
@@ -118,6 +104,42 @@ builder.Services.AddAuthorizationBuilder()
             policy.RequireRole("Administrador", "Vendedor");
         });
 
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "API de Pedidos",
+        Version = "v1",
+        Description = "Documentación de la API de Pedidos"
+    });
+
+    const string securitySchemeName = "Bearer";
+
+    c.AddSecurityDefinition(
+        securitySchemeName,
+        new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Description = "Ingrese: Bearer {token}",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT"
+        });
+
+    c.AddSecurityRequirement(document =>
+        new OpenApiSecurityRequirement
+        {
+            [
+                new OpenApiSecuritySchemeReference(
+                    securitySchemeName,
+                    document)
+            ] = []
+        });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -147,7 +169,20 @@ if (app.Environment.IsDevelopment())
         }
     }
 
-    app.MapOpenApi();
+    app.UseSwagger();
+
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint(
+            "/swagger/v1/swagger.json",
+            "API v1");
+    });
+
+    app.MapGet(
+            "/swagger/{**any}",
+            () => Results.Redirect(
+                "/swagger/index.html"))
+        .AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
