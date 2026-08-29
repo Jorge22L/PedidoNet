@@ -1,7 +1,9 @@
 ﻿using Application.Clientes.Commands;
 using Application.Clientes.Queries;
 using Application.Interfaces;
+using Domain.Abstractions;
 using Domain.Entities;
+using Domain.Repositories;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -15,80 +17,55 @@ namespace Infrastructure.Services
 {
     public class ClienteService : IClienteService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IClienteRepository _clienteRepository;
+        private readonly IUnitofWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        // Constructor que recibe el contexto de la base de datos
-        // Inyección de dependencias para facilitar el testing y la mantenibilidad
-        public ClienteService(ApplicationDbContext context, IMapper mapper)
+        public ClienteService(IClienteRepository clienteRepository, IUnitofWork unitOfWork, IMapper mapper)
         {
-            _context = context;
+            _clienteRepository = clienteRepository;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
         public async Task<bool> ActualizarClienteAsync(int id, ActualizarClienteCommand command)
         {
-            var cliente = await _context.Clientes.FindAsync(id);
-            if (cliente == null) return false;
-
-            //cliente.Nombre = command.Nombre ?? cliente.Nombre;
-            //cliente.Cedula = command.Cedula ?? cliente.Cedula;
-            //cliente.Telefono = command.Telefono ?? cliente.Telefono;
-            //cliente.Direccion = command.Direccion ?? cliente.Direccion;
-            //cliente.EsConsumidorFinal = command.EsConsumidorFinal;
+            var cliente = await _clienteRepository.ObtenerPorIdAsync(id);
+            if(cliente == null)
+            {
+                return false;
+            }
 
             _mapper.Map(command, cliente);
 
-            await _context.SaveChangesAsync();
-
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
 
         public async Task<int> CrearClienteAsync(CrearClienteCommand command)
         {
-            //var cliente = new Cliente
-            //{
-            //    Nombre = command.Nombre,
-            //    Cedula = command.Cedula,
-            //    Telefono = command.Telefono,
-            //    Direccion = command.Direccion,
-            //    EsConsumidorFinal = command.EsConsumidorFinal
-            //};
+           var cliente = _mapper.Map<Cliente>(command);
 
-            var cliente = _mapper.Map<Cliente>(command);
+            await _clienteRepository.AgregarAsync(cliente);
 
-            _context.Clientes.Add(cliente);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             return cliente.ClienteId;
         }
 
         public async Task<bool> EliminarClienteAsync(int id)
         {
-            var cliente = await _context.Clientes.FindAsync(id);
+            var cliente = await _clienteRepository.ObtenerPorIdAsync(id);
             if (cliente == null) return false;
 
-            _context.Clientes.Remove(cliente);
-            await _context.SaveChangesAsync();
+            _clienteRepository.Eliminar(cliente);
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
 
         public async Task<ClienteDto?> ObtenerPorIdAsync(int id)
         {
-            //var cliente = _context.Clientes
-            //    .Where(c => c.ClienteId == id)
-            //    .Select(c => new ClienteDto()
-            //    {
-            //        ClienteId = c.ClienteId,
-            //        Nombre = c.Nombre,
-            //        Cedula = c.Cedula,
-            //        Telefono = c.Telefono,
-            //        Direccion = c.Direccion,
-            //        EsConsumidorFinal = c.EsConsumidorFinal
-            //    })
-            //    .FirstOrDefaultAsync();
-
-            var cliente = await _context.Clientes.FindAsync(id);
+            var cliente = await _clienteRepository.ObtenerPorIdAsync(id);
             if (cliente == null) return null;
 
             return _mapper.Map<ClienteDto>(cliente);
@@ -96,21 +73,9 @@ namespace Infrastructure.Services
 
         public async Task<List<ClienteDto>> ObtenerTodosAsync()
         {
-            //var clientes = _context.Clientes
-            //    .Select(c => new ClienteDto
-            //    {
-            //        ClienteId = c.ClienteId,
-            //        Nombre = c.Nombre,
-            //        Cedula = c.Cedula,
-            //        Telefono = c.Telefono,
-            //        Direccion = c.Direccion,
-            //        EsConsumidorFinal = c.EsConsumidorFinal
-            //    })
-            //    .ToListAsync();
+            var clientes = await _clienteRepository.ObtenerTodosAsync();
 
-            var productos = await _context.Clientes.ToListAsync();
-
-            return _mapper.Map<List<ClienteDto>>(productos);
+            return _mapper.Map<List<ClienteDto>>(clientes);
         }
     }
 }

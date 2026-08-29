@@ -18,6 +18,10 @@ using System.Text;
 using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi;
+using Domain.Repositories;
+using Infrastructure.Repositories;
+using Application.Interfaces.Repositories;
+using Domain.Abstractions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +60,13 @@ builder.Services.AddValidatorsFromAssemblyContaining<CrearProductoCommandValidat
 builder.Services.AddScoped<IValidator<ActualizarProductoCommand>,  ActualizarProductoCommandValidator>();
 
 // Agregando servicios de infraestructura
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IPedidoRepository, PedidoRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IUnitofWork, EfUnitOfWork>();
+
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
