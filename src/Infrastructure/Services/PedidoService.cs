@@ -42,11 +42,14 @@ namespace Infrastructure.Services
         public async Task<int> CrearPedidoAsync(CrearPedidoCommand command)
         {
             await using var transaction =
-                await _unitOfWork
-                    .BeginTransactionAsync();
+        await _unitOfWork.BeginTransactionAsync();
 
             try
             {
+                /*
+                 * Application verifica existencia porque eso
+                 * requiere acceder a persistencia.
+                 */
                 var clienteExiste =
                     await _clienteRepository
                         .ExisteAsync(command.ClienteId);
@@ -57,24 +60,17 @@ namespace Infrastructure.Services
                         "El cliente especificado no existe.");
                 }
 
-                var productosIds = command.Detalles
-                    .Select(d => d.ProductoId)
-                    .ToList();
-
-                if (productosIds.Count !=
-                    productosIds.Distinct().Count())
-                {
-                    throw new ArgumentException(
-                        "No se permite repetir un producto dentro del pedido.");
-                }
+                var productosIds =
+                    command.Detalles
+                        .Select(x => x.ProductoId)
+                        .Distinct()
+                        .ToList();
 
                 var productos =
                     await _productoRepository
-                        .ObtenerPorIdsAsync(
-                            productosIds);
+                        .ObtenerPorIdsAsync(productosIds);
 
-                if (productos.Count !=
-                    productosIds.Count)
+                if (productos.Count != productosIds.Count)
                 {
                     throw new ArgumentException(
                         "Uno o más productos no existen.");
@@ -84,38 +80,21 @@ namespace Infrastructure.Services
                     productos.ToDictionary(
                         p => p.ProductoId);
 
-                // Primero validar TODO el stock
-                foreach (var detalleCommand
-                         in command.Detalles)
+                var pedido = new Pedido
                 {
-                    var producto =
-                        productosPorId[
-                            detalleCommand.ProductoId];
+                    ClienteId = command.ClienteId,
 
-                    if (producto.Existencias <
-                        detalleCommand.Cantidad)
-                    {
-                        throw new ArgumentException(
-                            $"Stock insuficiente para " +
-                            $"el producto {producto.Nombre}. " +
-                            $"Stock disponible: " +
-                            $"{producto.Existencias}");
-                    }
-                }
+                    Fecha = command.Fecha,
 
-                var pedido =
-                    _mapper.Map<Pedido>(command);
+                    Descuento = command.Descuento,
 
-                pedido.Estado = "Pendiente";
+                    FormaPago = command.FormaPago
+                };
 
                 /*
-                 * Importante:
-                 * si Mapster está mapeando automáticamente
-                 * command.Detalles, limpiamos la colección para
-                 * construirla nosotros con precios de BD.
+                 * Las reglas importantes ahora viven
+                 * dentro del Domain.
                  */
-                pedido.Detalles.Clear();
-
                 foreach (var detalleCommand
                          in command.Detalles)
                 {
@@ -123,39 +102,19 @@ namespace Infrastructure.Services
                         productosPorId[
                             detalleCommand.ProductoId];
 
-                    var detalle =
-                        new DetallePedido
-                        {
-                            ProductoId =
-                                producto.ProductoId,
-
-                            Cantidad =
-                                detalleCommand.Cantidad,
-
-                            // Precio desde BD
-                            PrecioUnitario =
-                                producto.PrecioVenta,
-
-                            Descuento =
-                                detalleCommand.Descuento,
-
-                            // IVA desde BD
-                            TieneIVA =
-                                producto.TieneIVA ?? false
-                        };
-
-                    pedido.Detalles.Add(detalle);
-
-                    producto.Existencias -=
-                        detalleCommand.Cantidad;
+                    pedido.AgregarDetalle(
+                        producto,
+                        detalleCommand.Cantidad,
+                        detalleCommand.Descuento);
                 }
 
-                CalcularTotalesPedido(pedido);
+                pedido.RecalcularTotales();
 
                 await _pedidoRepository
                     .AgregarAsync(pedido);
 
-                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork
+                    .SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
@@ -172,40 +131,29 @@ namespace Infrastructure.Services
             int id,
             ActualizarPedidoCommand command)
         {
-            var pedido =
-                await _pedidoRepository
-                    .ObtenerPorIdAsync(
-                        id,
-                        incluirDetalles: true);
-
-            if (pedido == null)
-                return false;
-
-            if (pedido.Estado != "Pendiente")
-            {
-                throw new ValidationException(
-                    new Dictionary<string, string[]>
-                    {
-                    {
-                        "Estado",
-                        new[]
-                        {
-                            "Solo se pueden actualizar pedidos pendientes."
-                        }
-                    }
-                    });
-            }
-
             await using var transaction =
-                await _unitOfWork
-                    .BeginTransactionAsync();
+        await _unitOfWork
+            .BeginTransactionAsync();
 
             try
             {
+                var pedido =
+                    await _pedidoRepository
+                        .ObtenerPorIdAsync(
+                            id,
+                            incluirDetalles: true);
+
+                if (pedido == null)
+                {
+                    await transaction.RollbackAsync();
+                    return false;
+                }
+
                 /*
-                 * Actualizar cliente solamente cuando
-                 * viene informado.
+                 * Domain decide si se puede modificar.
                  */
+                pedido.ValidarPuedeModificarse();
+
                 if (command.ClienteId > 0)
                 {
                     var clienteExiste =
@@ -242,20 +190,15 @@ namespace Infrastructure.Services
                         command.FormaPago;
                 }
 
-                /*
-                 * Sólo restauramos y reconstruimos
-                 * inventario si realmente vienen detalles.
-                 */
                 if (command.Detalles is
                     { Count: > 0 })
                 {
                     /*
-                     * 1. Obtener productos anteriores.
+                     * 1. Recuperar productos anteriores.
                      */
                     var productosAnterioresIds =
                         pedido.Detalles
-                            .Select(
-                                d => d.ProductoId)
+                            .Select(d => d.ProductoId)
                             .Distinct()
                             .ToList();
 
@@ -264,57 +207,57 @@ namespace Infrastructure.Services
                             .ObtenerPorIdsAsync(
                                 productosAnterioresIds);
 
-                    var productosAnterioresPorId =
+                    var anterioresPorId =
                         productosAnteriores
                             .ToDictionary(
                                 p => p.ProductoId);
 
                     /*
-                     * 2. Restaurar stock anterior.
+                     * 2. Reponer inventario anterior.
                      */
                     foreach (var detalle
                              in pedido.Detalles)
                     {
-                        if (
-                            productosAnterioresPorId
-                                .TryGetValue(
-                                    detalle.ProductoId,
-                                    out var producto))
+                        if (!anterioresPorId.TryGetValue(
+                                detalle.ProductoId,
+                                out var producto))
                         {
-                            producto.Existencias +=
-                                detalle.Cantidad;
+                            throw new InvalidOperationException(
+                                $"No se encontró el producto " +
+                                $"{detalle.ProductoId}.");
                         }
+
+                        producto.ReponerExistencia(
+                            detalle.Cantidad);
                     }
 
                     /*
-                     * 3. Validar productos duplicados.
+                     * 3. Eliminar antiguos detalles.
+                     */
+                    var detallesAnteriores =
+                        pedido.Detalles.ToList();
+
+                    _pedidoRepository
+                        .EliminarDetalles(
+                            detallesAnteriores);
+
+                    pedido.Detalles.Clear();
+
+                    /*
+                     * 4. Obtener nuevos productos.
                      */
                     var nuevosProductosIds =
                         command.Detalles
-                            .Select(
-                                d => d.ProductoId)
+                            .Select(d => d.ProductoId)
+                            .Distinct()
                             .ToList();
 
-                    if (
-                        nuevosProductosIds.Count !=
-                        nuevosProductosIds
-                            .Distinct()
-                            .Count())
-                    {
-                        throw new ArgumentException(
-                            "No se permite repetir un producto dentro del pedido.");
-                    }
-
-                    /*
-                     * 4. Cargar nuevos productos.
-                     */
                     var nuevosProductos =
                         await _productoRepository
                             .ObtenerPorIdsAsync(
                                 nuevosProductosIds);
 
-                    if (
-                        nuevosProductos.Count !=
+                    if (nuevosProductos.Count !=
                         nuevosProductosIds.Count)
                     {
                         throw new ArgumentException(
@@ -327,8 +270,9 @@ namespace Infrastructure.Services
                                 p => p.ProductoId);
 
                     /*
-                     * 5. Validar TODO el stock antes
-                     *    de modificar los detalles.
+                     * 5. El Domain vuelve a crear los detalles
+                     *    y valida stock, duplicados, precios,
+                     *    descuentos e IVA.
                      */
                     foreach (var detalleCommand
                              in command.Detalles)
@@ -337,202 +281,17 @@ namespace Infrastructure.Services
                             nuevosProductosPorId[
                                 detalleCommand.ProductoId];
 
-                        if (
-                            producto.Existencias <
-                            detalleCommand.Cantidad)
-                        {
-                            throw new ArgumentException(
-                                $"Stock insuficiente para " +
-                                $"{producto.Nombre}. " +
-                                $"Stock disponible: " +
-                                $"{producto.Existencias}");
-                        }
-                    }
-
-                    /*
-                     * Guardamos una copia porque RemoveRange
-                     * recibe los detalles existentes.
-                     */
-                    var detallesAnteriores =
-                        pedido.Detalles.ToList();
-
-                    _pedidoRepository
-                        .EliminarDetalles(
-                            detallesAnteriores);
-
-                    pedido.Detalles.Clear();
-
-                    /*
-                     * 6. Crear TODOS los nuevos detalles.
-                     */
-                    foreach (var detalleCommand
-                             in command.Detalles)
-                    {
-                        var producto =
-                            nuevosProductosPorId[
-                                detalleCommand.ProductoId];
-
-                        var detalle =
-                            new DetallePedido
-                            {
-                                ProductoId =
-                                    producto.ProductoId,
-
-                                Cantidad =
-                                    detalleCommand.Cantidad,
-
-                                PrecioUnitario =
-                                    producto.PrecioVenta,
-
-                                Descuento =
-                                    detalleCommand.Descuento,
-
-                                TieneIVA =
-                                    producto.TieneIVA ??
-                                    false
-                            };
-
-                        pedido.Detalles.Add(
-                            detalle);
-
-                        producto.Existencias -=
-                            detalleCommand.Cantidad;
+                        pedido.AgregarDetalle(
+                            producto,
+                            detalleCommand.Cantidad,
+                            detalleCommand.Descuento);
                     }
                 }
 
-                CalcularTotalesPedido(pedido);
-
-                await _unitOfWork
-                    .SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                return true;
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        public async Task<bool>
-            CambiarEstadoPedidoAsync(
-                int id,
-                string nuevoEstado)
-        {
-            var pedido =
-                await _pedidoRepository
-                    .ObtenerPorIdAsync(id);
-
-            if (pedido == null)
-                return false;
-
-            var estadosValidos =
-                new[]
-                {
-                "Pendiente",
-                "Completado",
-                "Cancelado"
-                };
-
-            if (!estadosValidos.Contains(
-                    nuevoEstado))
-            {
-                throw new ArgumentException(
-                    "Estado no válido. " +
-                    "Estados permitidos: " +
-                    "Pendiente, Completado, Cancelado.");
-            }
-
-            /*
-             * Manteniendo la lógica del punto 5:
-             * solamente Pendiente puede cambiar.
-             */
-            if (pedido.Estado != "Pendiente")
-            {
-                throw new InvalidOperationException(
-                    $"No se puede cambiar un pedido " +
-                    $"que está en estado " +
-                    $"'{pedido.Estado}'.");
-            }
-
-            if (nuevoEstado == "Pendiente")
-            {
-                throw new InvalidOperationException(
-                    "El pedido ya se encuentra pendiente.");
-            }
-
-            pedido.Estado = nuevoEstado;
-
-            await _unitOfWork.SaveChangesAsync();
-
-            return true;
-        }
-
-        public async Task<bool>
-            CompletarPedidoAsync(int id)
-        {
-            return await CambiarEstadoPedidoAsync(
-                id,
-                "Completado");
-        }
-
-        public async Task<bool>
-            CancelarPedidoAsync(int id)
-        {
-            var pedido =
-                await _pedidoRepository
-                    .ObtenerPorIdAsync(
-                        id,
-                        incluirDetalles: true);
-
-            if (pedido == null)
-                return false;
-
-            if (pedido.Estado != "Pendiente")
-            {
-                throw new InvalidOperationException(
-                    "Solo se pueden cancelar " +
-                    "pedidos pendientes.");
-            }
-
-            await using var transaction =
-                await _unitOfWork
-                    .BeginTransactionAsync();
-
-            try
-            {
-                var productosIds =
-                    pedido.Detalles
-                        .Select(
-                            d => d.ProductoId)
-                        .Distinct()
-                        .ToList();
-
-                var productos =
-                    await _productoRepository
-                        .ObtenerPorIdsAsync(
-                            productosIds);
-
-                var productosPorId =
-                    productos.ToDictionary(
-                        p => p.ProductoId);
-
-                foreach (var detalle
-                         in pedido.Detalles)
-                {
-                    if (
-                        productosPorId.TryGetValue(
-                            detalle.ProductoId,
-                            out var producto))
-                    {
-                        producto.Existencias +=
-                            detalle.Cantidad;
-                    }
-                }
-
-                pedido.Estado = "Cancelado";
+                /*
+                 * Domain calcula los importes.
+                 */
+                pedido.RecalcularTotales();
 
                 await _unitOfWork.SaveChangesAsync();
 
@@ -547,35 +306,119 @@ namespace Infrastructure.Services
             }
         }
 
-        public async Task<bool>
-            EliminarPedidoAsync(int id)
+        public async Task<bool>CompletarPedidoAsync(int id)
         {
-            var pedido =
-                await _pedidoRepository
-                    .ObtenerPorIdAsync(
-                        id,
-                        incluirDetalles: true);
+            var pedido = await _pedidoRepository.ObtenerPorIdAsync(id);
 
-            if (pedido == null)
-                return false;
-
-            if (pedido.Estado != "Pendiente")
+            if(pedido == null)
             {
-                throw new InvalidOperationException(
-                    "Solo se pueden eliminar " +
-                    "pedidos pendientes.");
+                return false;
             }
 
+            pedido.Completar();
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool>CancelarPedidoAsync(int id)
+        {
             await using var transaction =
-                await _unitOfWork
-                    .BeginTransactionAsync();
+        await _unitOfWork
+            .BeginTransactionAsync();
 
             try
             {
+                var pedido =
+                    await _pedidoRepository
+                        .ObtenerPorIdAsync(
+                            id,
+                            incluirDetalles: true);
+
+                if (pedido == null)
+                {
+                    await transaction.RollbackAsync();
+                    return false;
+                }
+
+                /*
+                 * El Domain valida la transición.
+                 */
+                pedido.Cancelar();
+
                 var productosIds =
                     pedido.Detalles
-                        .Select(
-                            d => d.ProductoId)
+                        .Select(x => x.ProductoId)
+                        .Distinct()
+                        .ToList();
+
+                var productos =
+                    await _productoRepository
+                        .ObtenerPorIdsAsync(
+                            productosIds);
+
+                var productosPorId =
+                    productos.ToDictionary(
+                        x => x.ProductoId);
+
+                foreach (var detalle
+                         in pedido.Detalles)
+                {
+                    if (!productosPorId.TryGetValue(
+                            detalle.ProductoId,
+                            out var producto))
+                    {
+                        throw new InvalidOperationException(
+                            $"No se encontró el producto " +
+                            $"{detalle.ProductoId}.");
+                    }
+
+                    producto.ReponerExistencia(
+                        detalle.Cantidad);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<bool>EliminarPedidoAsync(int id)
+        {
+            await using var transaction =
+        await _unitOfWork
+            .BeginTransactionAsync();
+
+            try
+            {
+                var pedido =
+                    await _pedidoRepository
+                        .ObtenerPorIdAsync(
+                            id,
+                            incluirDetalles: true);
+
+                if (pedido == null)
+                {
+                    await transaction.RollbackAsync();
+                    return false;
+                }
+
+                /*
+                 * Regla del dominio.
+                 */
+                pedido.ValidarPuedeEliminarse();
+
+                var productosIds =
+                    pedido.Detalles
+                        .Select(d => d.ProductoId)
                         .Distinct()
                         .ToList();
 
@@ -591,21 +434,22 @@ namespace Infrastructure.Services
                 foreach (var detalle
                          in pedido.Detalles)
                 {
-                    if (
-                        productosPorId.TryGetValue(
+                    if (!productosPorId.TryGetValue(
                             detalle.ProductoId,
                             out var producto))
                     {
-                        producto.Existencias +=
-                            detalle.Cantidad;
+                        throw new InvalidOperationException(
+                            $"No se encontró el producto " +
+                            $"{detalle.ProductoId}.");
                     }
+
+                    producto.ReponerExistencia(
+                        detalle.Cantidad);
                 }
 
-                _pedidoRepository
-                    .Eliminar(pedido);
+                _pedidoRepository.Eliminar(pedido);
 
-                await _unitOfWork
-                    .SaveChangesAsync();
+                await _unitOfWork.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
@@ -658,59 +502,6 @@ namespace Infrastructure.Services
                 pedidos);
         }
 
-        private static void CalcularTotalesPedido(
-            Pedido pedido)
-        {
-            decimal subtotal = 0;
-            decimal totalIva = 0;
-
-            foreach (var detalle
-                     in pedido.Detalles)
-            {
-                var importeBruto =
-                    detalle.Cantidad *
-                    detalle.PrecioUnitario;
-
-                if (
-                    detalle.Descuento >
-                    importeBruto)
-                {
-                    throw new ArgumentException(
-                        "El descuento de una línea " +
-                        "no puede superar su importe.");
-                }
-
-                var subtotalLinea =
-                    importeBruto -
-                    detalle.Descuento;
-
-                subtotal += subtotalLinea;
-
-                if (detalle.TieneIVA)
-                {
-                    totalIva +=
-                        subtotalLinea * TasaIva;
-                }
-            }
-
-            var totalAntesDescuento =
-                subtotal + totalIva;
-
-            if (
-                pedido.Descuento >
-                totalAntesDescuento)
-            {
-                throw new ArgumentException(
-                    "El descuento general no puede " +
-                    "superar el total del pedido.");
-            }
-
-            pedido.SubTotal = subtotal;
-            pedido.IVA = totalIva;
-            pedido.Total =
-                totalAntesDescuento -
-                pedido.Descuento;
-        }
-
+        
     }
 }

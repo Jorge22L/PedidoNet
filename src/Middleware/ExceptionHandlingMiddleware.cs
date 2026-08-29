@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Application.Exceptions;
+using Domain.Exceptions;
 
 namespace Middleware
 {
@@ -26,9 +27,33 @@ namespace Middleware
             {
                 await _next(context);
             }
-            catch (Exception e)
+            catch (DomainException ex)
             {
-                await HandleExceptionAsync(context, e);
+                await WriteResponseAsync(
+                    context,
+                    StatusCodes.Status422UnprocessableEntity,
+                    ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                await WriteResponseAsync(
+                    context,
+                    StatusCodes.Status400BadRequest,
+                    ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                await WriteResponseAsync(
+                    context,
+                    StatusCodes.Status409Conflict,
+                    ex.Message);
+            }
+            catch (Exception)
+            {
+                await WriteResponseAsync(
+                    context,
+                    StatusCodes.Status500InternalServerError,
+                    "Ocurrió un error interno.");
             }
         }
 
@@ -61,6 +86,25 @@ namespace Middleware
             response.StatusCode = (int)statusCode;
             var json = JsonSerializer.Serialize(errorResponse);
             return response.WriteAsync(json);
+        }
+
+        private static async Task WriteResponseAsync(HttpContext context,
+            int statusCode,
+            string message,
+            object? errors = null)
+        {
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json";
+
+            var response = new
+            {
+                statusCode,
+                message,
+                errors
+            };
+
+            await context.Response.WriteAsync(
+                JsonSerializer.Serialize(response));
         }
     }
 

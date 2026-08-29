@@ -1,5 +1,6 @@
 ﻿using Application.Clientes.Commands;
 using Application.DetallePedido.Commands;
+using Application.DetallePedido.Validators;
 using Application.Pedidos.Commands;
 using FluentValidation;
 using System;

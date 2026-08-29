@@ -43,7 +43,8 @@ namespace Application.Common.Mappings
             // Pedidos
             config.NewConfig<CrearPedidoCommand, Pedido>()
                 .Map(dest => dest.Estado, src => "Pendiente")
-                .Ignore(dest => dest.PedidoId);
+                .Ignore(dest => dest.PedidoId)
+                .Ignore(dest => dest.Detalles);
 
             config.NewConfig<ActualizarPedidoCommand, Pedido>()
                 .Ignore(dest => dest.PedidoId)

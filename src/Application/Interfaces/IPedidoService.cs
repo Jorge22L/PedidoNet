@@ -16,7 +16,6 @@ namespace Application.Interfaces
         Task<int> CrearPedidoAsync(CrearPedidoCommand command);
         Task<bool> ActualizarPedidoAsync(int id, ActualizarPedidoCommand command);
         Task<bool> EliminarPedidoAsync(int id);
-        Task<bool> CambiarEstadoPedidoAsync(int id, string nuevoEstado);
         Task<bool> CompletarPedidoAsync(int id);
         Task<bool> CancelarPedidoAsync(int id);
     }

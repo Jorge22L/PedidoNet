@@ -248,117 +248,19 @@ namespace Api.Controllers
         }
 
         /// <summary>
-        /// Cambia el estado de un pedido
-        /// </summary>
-        [HttpPatch("{id}/estado")]
-        public async Task<IActionResult> CambiarEstado(int id, [FromBody] CambiarEstadoRequest request)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(request.Estado))
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "El estado es requerido"
-                    });
-
-                var actualizado = await _pedidoService.CambiarEstadoPedidoAsync(id, request.Estado);
-                if (!actualizado)
-                    return NotFound(new
-                    {
-                        success = false,
-                        message = "Pedido no encontrado"
-                    });
-
-                return Ok(new
-                {
-                    success = true,
-                    message = $"Estado del pedido cambiado a '{request.Estado}' correctamente"
-                });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Error interno del servidor",
-                    error = ex.Message
-                });
-            }
-        }
-
-        /// <summary>
-        /// Completa un pedido
-        /// </summary>
-        [HttpPatch("{id}/completar")]
-        public async Task<IActionResult> Completar(int id)
-        {
-            try
-            {
-                var completado = await _pedidoService.CompletarPedidoAsync(id);
-                if (!completado)
-                    return NotFound(new
-                    {
-                        success = false,
-                        message = "Pedido no encontrado"
-                    });
-
-                return Ok(new
-                {
-                    success = true,
-                    message = "Pedido completado correctamente"
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Error interno del servidor",
-                    error = ex.Message
-                });
-            }
-        }
-
-        /// <summary>
         /// Cancela un pedido
         /// </summary>
         [HttpPatch("{id}/cancelar")]
         public async Task<IActionResult> Cancelar(int id)
         {
-            try
-            {
-                var cancelado = await _pedidoService.CancelarPedidoAsync(id);
-                if (!cancelado)
-                    return NotFound(new
-                    {
-                        success = false,
-                        message = "Pedido no encontrado"
-                    });
+            var resultado =
+        await _pedidoService
+            .CancelarPedidoAsync(id);
 
-                return Ok(new
-                {
-                    success = true,
-                    message = "Pedido cancelado correctamente"
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Error interno del servidor",
-                    error = ex.Message
-                });
-            }
+            if (!resultado)
+                return NotFound();
+
+            return NoContent();
         }
 
         /// <summary>
@@ -399,6 +301,20 @@ namespace Api.Controllers
                     error = ex.Message
                 });
             }
+        }
+
+        [HttpPatch("{id:int}/completar")]
+        public async Task<IActionResult> Completar(
+    int id)
+        {
+            var resultado =
+                await _pedidoService
+                    .CompletarPedidoAsync(id);
+
+            if (!resultado)
+                return NotFound();
+
+            return NoContent();
         }
     }
 
