@@ -1,0 +1,8 @@
+docker-secrets/
+.git/
+.vs/
+**/bin/
+**/obj/
+.env
+
+README.md

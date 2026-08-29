@@ -1,0 +1,43 @@
+services: 
+
+    pedidonet-api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        
+        container_name: pedidonet-api
+
+        ports:
+        - "8080:8080"
+
+        environment:
+            ASPNETCORE_ENVIRONMENT: Production
+            ASPNETCORE_URLS: http://+:8080
+
+            Jwt__Issuer: PedidoNet
+            Jwt__Audience: PedidoNetApi
+            Jwt__ExpirationMinutes: "60"
+            Jwt__RefreshTokenExpirationDays: "7"
+
+        secrets:
+            - ConnectionStrings__DefaultConnection
+            - Jwt__Key
+
+        networks:
+            - backend-network
+
+        restart: unless-stopped
+
+secrets:
+
+    ConnectionStrings__DefaultConnection:
+        file: ./docker-secrets/ConnectionStrings__DefaultConnection
+
+    Jwt__Key:
+        file: ./docker-secrets/Jwt__Key
+
+networks:
+
+    backend-network:
+        external: true
+        name: backend-network

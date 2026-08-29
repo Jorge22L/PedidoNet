@@ -279,3 +279,7 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+docker-secrets/
+*.secret
+.env

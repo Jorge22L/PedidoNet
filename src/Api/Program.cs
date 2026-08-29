@@ -29,12 +29,16 @@ var builder = WebApplication.CreateBuilder(args);
 var config = TypeAdapterConfig.GlobalSettings;
 config.Scan(typeof(MappingConfig).Assembly);
 
+builder.Configuration.AddKeyPerFile(directoryPath: "/run/secrets", optional: true);
+
+
 builder.Services.AddSingleton(config);
 builder.Services.AddScoped<IMapper, ServiceMapper>();
 
 // Conexion a la base de datos
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+    throw new InvalidOperationException("No se encontró la cadena de conexión"))); 
 
 builder.Services.AddEndpointsApiExplorer();
 
