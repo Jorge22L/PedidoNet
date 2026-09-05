@@ -20,7 +20,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi;
 using Domain.Repositories;
 using Infrastructure.Repositories;
-using Application.Interfaces.Repositories;
 using Domain.Abstractions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,6 +44,17 @@ builder.Services.AddEndpointsApiExplorer();
 // Evitar minimal APIs
 builder.Services.AddControllers();
 
+// Agregando CORS
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddScoped<IValidator<CrearProductoCommand>, CrearProductoCommandValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CrearProductoCommandValidator>();
 builder.Services.AddScoped<IValidator<ActualizarProductoCommand>,  ActualizarProductoCommandValidator>();
@@ -60,6 +70,7 @@ builder.Services.AddScoped<IUnitofWork, EfUnitOfWork>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
+builder.Services.AddScoped<IPedidoWriteRepository, PedidoWriteRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Agregando JWT
@@ -107,8 +118,6 @@ builder.Services.AddAuthorizationBuilder()
         {
             policy.RequireRole("Administrador", "Vendedor");
         });
-
-builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
 {
@@ -181,20 +190,14 @@ if (app.Environment.IsDevelopment())
             "/swagger/v1/swagger.json",
             "API v1");
     });
-
-    app.MapGet(
-            "/swagger/{**any}",
-            () => Results.Redirect(
-                "/swagger/index.html"))
-        .AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseGlobalExceptionHandler();
 
 // Usar controladores
 app.MapControllers();

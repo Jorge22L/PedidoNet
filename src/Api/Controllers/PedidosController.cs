@@ -86,19 +86,8 @@ namespace Api.Controllers
         /// Crea un nuevo pedido
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> Post(
-            [FromBody] CrearPedidoCommand command)
+        public async Task<IActionResult> Post([FromBody] CrearPedidoCommand command)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = "Datos inválidos",
-                    errors = ModelState
-                });
-            }
-
             var pedidoId =
                 await _pedidoService
                     .CrearPedidoAsync(command);
@@ -109,10 +98,7 @@ namespace Api.Controllers
                 new
                 {
                     success = true,
-                    data = new
-                    {
-                        id = pedidoId
-                    },
+                    data = new { id = pedidoId },
                     message = "Pedido creado exitosamente"
                 });
         }
@@ -190,18 +176,7 @@ namespace Api.Controllers
         public async Task<IActionResult> Completar(
             int id)
         {
-            var completado =
-                await _pedidoService
-                    .CompletarPedidoAsync(id);
-
-            if (!completado)
-            {
-                return NotFound(new
-                {
-                    success = false,
-                    message = "Pedido no encontrado"
-                });
-            }
+            await _pedidoService.CompletarPedidoAsync(id);
 
             return Ok(new
             {
@@ -214,21 +189,9 @@ namespace Api.Controllers
         /// Cancela un pedido
         /// </summary>
         [HttpPatch("{id}/cancelar")]
-        public async Task<IActionResult> Cancelar(
-            int id)
+        public async Task<IActionResult> Cancelar(int id)
         {
-            var cancelado =
-                await _pedidoService
-                    .CancelarPedidoAsync(id);
-
-            if (!cancelado)
-            {
-                return NotFound(new
-                {
-                    success = false,
-                    message = "Pedido no encontrado"
-                });
-            }
+            await _pedidoService.CancelarPedidoAsync(id);
 
             return Ok(new
             {
@@ -289,10 +252,6 @@ namespace Api.Controllers
         }
     }
 
-    public class CambiarEstadoRequest
-    {
-        public string Estado { get; set; }
-            = string.Empty;
-    }
+
 
 }
