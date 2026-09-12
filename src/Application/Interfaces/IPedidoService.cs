@@ -11,7 +11,7 @@ namespace Application.Interfaces
     public interface IPedidoService
     {
         Task<List<PedidoDto>> ObtenerTodosAsync();
-        Task<PedidoDto>? ObtenerPorIdAsync(int id);
+        Task<PedidoDto?> ObtenerPorIdAsync(int id);
         Task<List<PedidoDto>> ObtenerPorClienteAsync(int clienteId);
         Task<int> CrearPedidoAsync(CrearPedidoCommand command);
         Task<bool> ActualizarPedidoAsync(int id, ActualizarPedidoCommand command);

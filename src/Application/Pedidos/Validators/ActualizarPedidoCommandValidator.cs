@@ -21,16 +21,10 @@ namespace Application.Pedidos.Validators
         public ActualizarPedidoCommandValidator()
         {
             RuleFor(x => x.ClienteId)
-               .GreaterThan(0)
-               .When(x => x.ClienteId != 0)
-               .WithMessage(
-                   "El cliente debe ser válido.");
-
-            RuleFor(x => x.Descuento)
-                .GreaterThanOrEqualTo(0)
-                .When(x => x.Descuento.HasValue)
+                .GreaterThan(0)
+                .When(x => x.ClienteId.HasValue)
                 .WithMessage(
-                    "El descuento no puede ser negativo.");
+                    "El cliente debe ser válido.");
 
             RuleFor(x => x.FormaPago)
                 .Must(forma =>

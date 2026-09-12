@@ -17,21 +17,6 @@ namespace Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task AgregarAsync(Pedido pedido)
-        {
-            await _context.Pedidos.AddAsync(pedido);
-        }
-
-        public void Eliminar(Pedido pedido)
-        {
-            _context.Pedidos.Remove(pedido);
-        }
-
-        public void EliminarDetalles(IEnumerable<DetallePedido> detalles)
-        {
-            _context.DetallePedidos.RemoveRange(detalles);
-        }
-
         public async Task<List<Pedido>> ObtenerPorClienteConRelacionesAsync(int clienteId)
         {
             return await _context.Pedidos

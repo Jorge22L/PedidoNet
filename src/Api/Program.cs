@@ -7,11 +7,9 @@ using FluentValidation;
 using Infrastructure.Services;
 using Mapster;
 using MapsterMapper;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Middleware;
 using Persistence;
-using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -21,6 +19,7 @@ using Microsoft.OpenApi;
 using Domain.Repositories;
 using Infrastructure.Repositories;
 using Domain.Abstractions;
+using Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +71,7 @@ builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
 builder.Services.AddScoped<IPedidoWriteRepository, PedidoWriteRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
 
 // Agregando JWT
 
@@ -193,6 +193,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseCors("AllowAll");
 app.UseAuthentication();

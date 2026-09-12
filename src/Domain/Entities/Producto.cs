@@ -17,6 +17,8 @@ namespace Domain.Entities
         public bool? TieneIVA { get; set; }
         public bool? TieneISC { get; set; }
 
+        public ICollection<ProductoImagen> Imagenes { get; set; } = new List<ProductoImagen>();
+
         public void DescontarExistencia(int cantidad)
         {
             if (cantidad <= 0)

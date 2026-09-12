@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Application.Interfaces.Repositories
+namespace Domain.Repositories
 {
     public interface IProductoRepository
     {

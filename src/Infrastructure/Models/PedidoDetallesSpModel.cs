@@ -1,20 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Application.DetallePedido.Commands
+namespace Infrastructure.Models
 {
-    public class DetallePedidoCommand
+    public class PedidoDetallesSpModel
     {
-        
         public int ProductoId { get; set; }
-        
         public int Cantidad { get; set; }
-       
         public decimal Descuento { get; set; }
-
     }
 }

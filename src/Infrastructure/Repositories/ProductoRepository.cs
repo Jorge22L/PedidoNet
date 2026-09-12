@@ -1,5 +1,5 @@
-﻿using Application.Interfaces.Repositories;
-using Domain.Entities;
+﻿using Domain.Entities;
+using Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
 using System;
@@ -29,7 +29,9 @@ namespace Infrastructure.Repositories
 
         public async Task<Producto?> ObtenerPorIdAsync(int id)
         {
-            return await _context.Productos.FirstOrDefaultAsync(p => p.ProductoId == id);
+            return await _context.Productos
+                .Include(p => p.Imagenes)
+                .FirstOrDefaultAsync(p => p.ProductoId == id);
         }
 
         public async Task<List<Producto>> ObtenerPorIdsAsync(IEnumerable<int> ids)
@@ -47,6 +49,7 @@ namespace Infrastructure.Repositories
         {
             return await _context.Productos
                 .AsNoTracking()
+                .Include(p => p.Imagenes)
                 .ToListAsync();
         }
     }

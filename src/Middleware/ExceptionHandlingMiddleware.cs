@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Application.Exceptions;
 using Domain.Exceptions;
+using Microsoft.AspNetCore.Http;
 
 namespace Middleware
 {

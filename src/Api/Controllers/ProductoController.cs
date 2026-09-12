@@ -75,6 +75,76 @@ namespace Api.Controllers
             return Ok(eliminado);
         }
 
+        [HttpPost]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
+        public async Task<IActionResult> SubirImagen(int id, IFormFile imagen, [FromForm] bool esPrincipal = false,
+            CancellationToken cancellationToken = default)
+        {
+            if(imagen is null || imagen.Length == 0)
+            {
+                return BadRequest(new
+                {
+                    message = "Debe proporcionar una imgen."
+                });
+            }
+
+            const long maxFileSize = 5 * 1024 * 1024;
+
+            if(imagen.Length > maxFileSize)
+            {
+                return BadRequest(new
+                {
+                    message = "La imagen no puede superar los 5 MB."
+                });
+            }
+
+            var contentTypesPermitidos = new[]
+            {
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+            };
+
+            if(!contentTypesPermitidos.Contains(imagen.ContentType, StringComparer.OrdinalIgnoreCase))
+            {
+                return BadRequest(new
+                {
+                    message = "Solo se permiten imagenes JPG, PNG o WEBP"
+                });
+            }
+
+            var extensionesPermitidas = new[]
+            {
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp"
+            };
+
+            var extension = Path.GetExtension(imagen.FileName).ToLowerInvariant();
+
+            if (!extensionesPermitidas.Contains(extension))
+            {
+                return BadRequest(new
+                {
+                    message = "La extensión del archivo no es válida"
+                });
+            }
+
+            await using var stream = imagen.OpenReadStream();
+            var resultado = await _productoService.AgregarImagenAsync(id, stream, imagen.FileName,
+                imagen.ContentType, imagen.Length, esPrincipal, cancellationToken);
+
+            if(resultado is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(resultado);
+        }
+
+
         private object FormatValidationErrors(FluentValidation.Results.ValidationResult validationResult)
         {
 

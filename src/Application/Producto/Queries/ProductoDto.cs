@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Application.ProductoImagen.Queries;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,5 +16,7 @@ namespace Application.Producto.Queries
         public int Existencias { get; set; }
         public bool? TieneIVA { get; set; }
         public bool? TieneISC { get; set; }
+
+        public List<ProductoImagenDto> Imagenes { get; set; } = [];
     }
 }

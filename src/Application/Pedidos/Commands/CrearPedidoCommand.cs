@@ -12,8 +12,7 @@ namespace Application.Pedidos.Commands
     {
         [Required]
         public int ClienteId { get; set; }
-        public DateTime Fecha { get; set; }
-        public decimal Descuento { get; set; }
+        
         [Required]
         public string FormaPago { get; set; } = "Contado";
 

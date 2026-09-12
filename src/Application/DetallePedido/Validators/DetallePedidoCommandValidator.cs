@@ -6,24 +6,19 @@ using System.Text;
 
 namespace Application.DetallePedido.Validators
 {
-    public class DetallePedidoCommandValidator : AbstractValidator<DetallePedidoCommand>
+    public class DetallePedidoCommandValidator
+    : AbstractValidator<DetallePedidoCommand>
     {
         public DetallePedidoCommandValidator()
         {
             RuleFor(x => x.ProductoId)
-               .GreaterThan(0)
-               .WithMessage(
-                   "Debe especificar un producto válido.");
+                .GreaterThan(0);
 
             RuleFor(x => x.Cantidad)
-                .GreaterThan(0)
-                .WithMessage(
-                    "La cantidad debe ser mayor a cero.");
+                .GreaterThan(0);
 
             RuleFor(x => x.Descuento)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage(
-                    "El descuento no puede ser negativo.");
+                .GreaterThanOrEqualTo(0);
         }
     }
 }

@@ -16,12 +16,5 @@ namespace Domain.Repositories
 
         Task<List<Pedido>> ObtenerPorClienteConRelacionesAsync(
             int clienteId);
-
-        Task AgregarAsync(Pedido pedido);
-
-        void Eliminar(Pedido pedido);
-
-        void EliminarDetalles(
-            IEnumerable<DetallePedido> detalles);
     }
 }

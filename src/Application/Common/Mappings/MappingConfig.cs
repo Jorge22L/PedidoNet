@@ -6,6 +6,7 @@ using Application.Pedidos.Commands;
 using Application.Pedidos.Queries;
 using Application.Producto.Commands;
 using Application.Producto.Queries;
+using Application.ProductoImagen.Queries;
 using Domain.Entities;
 using Mapster;
 using System;
@@ -60,7 +61,9 @@ namespace Application.Common.Mappings
             config.NewConfig<List<Domain.Entities.DetallePedido>, List<DetallePedidoDto>>()
                 .MapWith(src => src.Adapt<List<DetallePedidoDto>>());
 
+            config.NewConfig<Domain.Entities.ProductoImagen, ProductoImagenDto>();
 
+            config.NewConfig<Domain.Entities.Producto, ProductoDto>();
 
         }
     }

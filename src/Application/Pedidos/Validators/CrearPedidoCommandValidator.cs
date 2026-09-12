@@ -9,64 +9,35 @@ using System.Text;
 
 namespace Application.Pedidos.Validators
 {
-    public class CrearPedidoCommandValidator : AbstractValidator<CrearPedidoCommand>
+    public class CrearPedidoCommandValidator
+    : AbstractValidator<CrearPedidoCommand>
     {
-        private static readonly string[] FormasPagoValidas =
-        {
-            "Contado",
-            "Crédito",
-            "Transferencia",
-            "Tarjeta"
-        };
-
         public CrearPedidoCommandValidator()
         {
-            
-
-            RuleFor(x => x.Fecha)
-                .NotEmpty()
-                .WithMessage("La fecha es requerida.");
-
-            RuleFor(x => x.Descuento)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage(
-                    "El descuento del pedido no puede ser negativo.");
+            RuleFor(x => x.ClienteId)
+                .GreaterThan(0);
 
             RuleFor(x => x.FormaPago)
                 .NotEmpty()
-                .WithMessage("La forma de pago es requerida.")
-                .Must(forma =>
-                    FormasPagoValidas.Contains(
-                        forma,
-                        StringComparer.OrdinalIgnoreCase))
-                .WithMessage(
-                    "La forma de pago debe ser Contado, Crédito, " +
-                    "Transferencia o Tarjeta.");
+                .MaximumLength(20);
 
             RuleFor(x => x.Detalles)
                 .NotNull()
-                .WithMessage(
-                    "El pedido debe contener detalles.")
-                .NotEmpty()
-                .WithMessage(
-                    "El pedido debe contener al menos un producto.");
+                .NotEmpty();
 
             RuleForEach(x => x.Detalles)
-                .SetValidator(new DetallePedidoCommandValidator());
+                .SetValidator(
+                    new DetallePedidoCommandValidator());
 
             RuleFor(x => x.Detalles)
-                .Must(NoContieneProductosDuplicados)
+                .Must(NoContieneDuplicados)
                 .WithMessage(
-                    "No se permite repetir un producto dentro del pedido.");
+                    "No se permite repetir un producto.");
         }
 
-        private static bool NoContieneProductosDuplicados(List<DetallePedidoCommand> detalles)
+        private static bool NoContieneDuplicados(
+            List<DetallePedidoCommand> detalles)
         {
-            if(detalles == null)
-            {
-                return true;
-            }
-
             return detalles
                 .GroupBy(x => x.ProductoId)
                 .All(g => g.Count() == 1);
