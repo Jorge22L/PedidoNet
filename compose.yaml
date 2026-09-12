@@ -23,6 +23,9 @@ services:
             - ConnectionStrings__DefaultConnection
             - Jwt__Key
 
+        volumes:
+            - ./uploads:/app/wwwroot/uploads
+
         networks:
             - backend-network
 

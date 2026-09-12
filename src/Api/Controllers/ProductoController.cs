@@ -75,7 +75,7 @@ namespace Api.Controllers
             return Ok(eliminado);
         }
 
-        [HttpPost]
+        [HttpPost("{id:int}/imagenes")]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<IActionResult> SubirImagen(int id, IFormFile imagen, [FromForm] bool esPrincipal = false,
