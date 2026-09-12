@@ -1,4 +1,5 @@
-﻿using Application.Interfaces;
+﻿using Application.Common.Files;
+using Application.Interfaces;
 using Application.Producto.Commands;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -99,40 +100,18 @@ namespace Api.Controllers
                 });
             }
 
-            var contentTypesPermitidos = new[]
-            {
-                "image/jpeg",
-                "image/png",
-                "image/webp"
-            };
-
-            if(!contentTypesPermitidos.Contains(imagen.ContentType, StringComparer.OrdinalIgnoreCase))
-            {
-                return BadRequest(new
-                {
-                    message = "Solo se permiten imagenes JPG, PNG o WEBP"
-                });
-            }
-
-            var extensionesPermitidas = new[]
-            {
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".webp"
-            };
-
-            var extension = Path.GetExtension(imagen.FileName).ToLowerInvariant();
-
-            if (!extensionesPermitidas.Contains(extension))
-            {
-                return BadRequest(new
-                {
-                    message = "La extensión del archivo no es válida"
-                });
-            }
-
             await using var stream = imagen.OpenReadStream();
+
+            var validation = await ImageFileValidator.ValidateAsync(stream, imagen.FileName, imagen.ContentType, cancellationToken);
+
+            if (!validation.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = validation.Error
+                });
+            }
+
             var resultado = await _productoService.AgregarImagenAsync(id, stream, imagen.FileName,
                 imagen.ContentType, imagen.Length, esPrincipal, cancellationToken);
 

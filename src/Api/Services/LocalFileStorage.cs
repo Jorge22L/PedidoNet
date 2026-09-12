@@ -34,7 +34,7 @@ namespace Api.Services
 
         public async Task<string> GuardarAsync(int productoId, Stream stream, string nombreArchivo, string contentType, CancellationToken cancellationToken = default)
         {
-            var extension = Path.GetExtension(nombreArchivo).ToLowerInvariant();
+            var extension = GetExtension(contentType);
 
             var nombreGenerado = $"{Guid.NewGuid():N}{extension}";
 
@@ -67,6 +67,18 @@ namespace Api.Services
             await stream.CopyToAsync(fileStream, cancellationToken);
 
             return $"/uploads/productos/{productoId}/{nombreGenerado}";
+        }
+
+        private static string GetExtension(string contentType)
+        {
+            return contentType switch
+            {
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                "image/webp" => ".webp",
+
+                _ => throw new InvalidOperationException($"Content-Type no soportado: {contentType}")
+            };
         }
     }
 }
