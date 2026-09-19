@@ -13,7 +13,7 @@ namespace Application.Interfaces
     {
         Task<List<ProductoDto>> ObtenerTodosAsync();
         Task<ProductoDto?> ObtenerPorIdAsync(int id);
-        Task<int> CrearProductoAsync(CrearProductoCommand command);
+        Task<ProductoDto> CrearProductoAsync(CrearProductoCommand command, CancellationToken cancellationToken = default);
         Task<bool> ActualizarProductoAsync(int id, ActualizarProductoCommand command);
         Task<bool> EliminarProductoAsync(int id);
         Task<ProductoImagenDto?> AgregarImagenAsync(

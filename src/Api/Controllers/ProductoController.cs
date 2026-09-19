@@ -1,6 +1,7 @@
 ﻿using Application.Common.Files;
 using Application.Interfaces;
 using Application.Producto.Commands;
+using Application.Producto.Queries;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -32,7 +33,7 @@ namespace Api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<IActionResult> Get(int id, CancellationToken cancellationToken)
         {
             var producto = await _productoService.ObtenerPorIdAsync(id);
             if (producto == null) return NotFound();
@@ -42,22 +43,20 @@ namespace Api.Controllers
 
         [Authorize(Roles = "Administrador")]
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] CrearProductoCommand command)
+        public async Task<ActionResult<ProductoDto>> Post([FromBody] CrearProductoCommand command, 
+            CancellationToken cancellationToken)
         {
 
-            var validation = _crearProductoCommandValidator.Validate(command);
+            var validation = await _crearProductoCommandValidator.ValidateAsync(command, cancellationToken);
 
             if (!validation.IsValid)
             {
                 return BadRequest(FormatValidationErrors(validation));
             }
-            else
-            {
-                var id = await _productoService.CrearProductoAsync(command);
-                return CreatedAtAction(nameof(Get), new { id }, command);
-            }
 
-                
+            var id = await _productoService.CrearProductoAsync(command);
+
+            return CreatedAtAction(nameof(Get), new { id }, command); 
         }
 
         [HttpPut("{id}")]

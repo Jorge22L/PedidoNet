@@ -6,8 +6,7 @@ namespace Domain.Abstractions
 {
     public interface IUnitofWork
     {
-        Task<int> SaveChangesAsync(
-        CancellationToken cancellationToken = default);
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
         Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     }

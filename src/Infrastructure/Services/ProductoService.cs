@@ -94,7 +94,7 @@ namespace Infrastructure.Services
 
         }
 
-        public async Task<int> CrearProductoAsync(CrearProductoCommand command)
+        public async Task<ProductoDto> CrearProductoAsync(CrearProductoCommand command, CancellationToken cancellationToken = default)
         {
             var producto = _mapper.Map<Producto>(command);
 
@@ -102,7 +102,7 @@ namespace Infrastructure.Services
 
             await _unitOfWork.SaveChangesAsync();
 
-            return producto.ProductoId;
+            return _mapper.Map<ProductoDto>(producto);
         }
 
         public Task<bool> EliminarImagenAsync(int productoId, int imagenId, CancellationToken cancellationToken = default)
