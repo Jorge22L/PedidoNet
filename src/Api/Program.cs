@@ -25,6 +25,9 @@ using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Api.Configuration;
 using Asp.Versioning.ApiExplorer;
+using Api.RateLimiting;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,8 +43,8 @@ builder.Services.AddScoped<IMapper, ServiceMapper>();
 
 // Conexion a la base de datos
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
-    throw new InvalidOperationException("No se encontró la cadena de conexión"))); 
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection") ??
+    throw new InvalidOperationException("No se encontró la cadena de conexión")));
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -80,7 +83,7 @@ builder.Services.AddCors(opt =>
 
 builder.Services.AddScoped<IValidator<CrearProductoCommand>, CrearProductoCommandValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CrearProductoCommandValidator>();
-builder.Services.AddScoped<IValidator<ActualizarProductoCommand>,  ActualizarProductoCommandValidator>();
+builder.Services.AddScoped<IValidator<ActualizarProductoCommand>, ActualizarProductoCommandValidator>();
 
 // Agregando servicios de infraestructura
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
@@ -171,6 +174,74 @@ builder.Services.AddSwaggerGen(c =>
         });
 });
 
+builder.Services.AddRateLimiter(options =>
+{
+options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+options.AddPolicy(RateLimitPolicies.Api,
+    httpContext =>
+    {
+        var partitionKey = httpContext.User.Identity?.IsAuthenticated == true
+        ? httpContext.User.FindFirstValue(ClaimTypes.Name) ?? "authenticated"
+        : httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+
+        return RateLimitPartition
+        .GetSlidingWindowLimiter(partitionKey, _ =>
+        new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 120,
+
+            Window = TimeSpan.FromMinutes(1),
+
+            SegmentsPerWindow = 6,
+
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+
+options.AddPolicy(
+    RateLimitPolicies.Auth,
+    httpContext =>
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition
+        .GetFixedWindowLimiter(
+            ip, _ =>
+            new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+        context.HttpContext.Response.ContentType = "application/problem+json";
+
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            context.HttpContext
+                .Response
+                .Headers
+                .RetryAfter = ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();
+        }
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            type = "https://httpstatuses.com/429",
+            title = "Demasiadas solicitudes",
+            status = StatusCodes.Status429TooManyRequests,
+            detail = "Se alcanzó el limite de solicitudes. Intente nuevamente más tarde"
+        }, cancellationToken);
+    };
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -206,7 +277,7 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwaggerUI(c =>
     {
-        foreach(var description in apiVersionProvider.ApiVersionDescriptions.Reverse())
+        foreach (var description in apiVersionProvider.ApiVersionDescriptions.Reverse())
         {
             c.SwaggerEndpoint(
                 $"/swagger/{description.GroupName}/swagger.json",
@@ -219,8 +290,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 

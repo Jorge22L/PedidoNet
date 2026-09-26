@@ -1,4 +1,5 @@
-﻿using Application.Common.Files;
+﻿using Api.RateLimiting;
+using Application.Common.Files;
 using Application.Interfaces;
 using Application.Producto.Commands;
 using Application.Producto.Queries;
@@ -7,12 +8,14 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.Controllers
 {
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
+    [EnableRateLimiting(RateLimitPolicies.Api)]
     [Route("api/v{version:apiVersion}/[controller]")]
     public class ProductoController : ControllerBase
     {

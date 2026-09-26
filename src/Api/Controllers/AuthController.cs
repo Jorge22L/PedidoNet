@@ -1,13 +1,16 @@
-﻿using Application.Auth;
+﻿using Api.RateLimiting;
+using Application.Auth;
 using Application.Interfaces;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.Controllers
 {
     [ApiController]
     [ApiVersion("1.0")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [Route("api/v{version:apiVersion}/[controller]")]
     public class AuthController : ControllerBase
     {

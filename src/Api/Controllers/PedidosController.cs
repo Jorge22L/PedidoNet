@@ -1,14 +1,17 @@
-﻿using Application.Interfaces;
+﻿using Api.RateLimiting;
+using Application.Interfaces;
 using Application.Pedidos.Commands;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.Controllers
 {
     [ApiController]
     [ApiVersion("1.0")]
+    [EnableRateLimiting(RateLimitPolicies.Api)]
     [Route("api/v{version:apiVersion}/[controller]")]
     public class PedidosController : ControllerBase
     {

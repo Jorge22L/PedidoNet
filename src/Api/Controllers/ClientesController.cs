@@ -1,12 +1,15 @@
-﻿using Application.Clientes.Commands;
+﻿using Api.RateLimiting;
+using Application.Clientes.Commands;
 using Application.Interfaces;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.Controllers
 {
     [ApiController]
     [ApiVersion("1.0")]
+    [EnableRateLimiting(RateLimitPolicies.Api)]
     [Route("api/v{version:apiVersion}/[controller]")]
     public class ClientesController : ControllerBase
     {
