@@ -10,6 +10,7 @@ namespace Application.Producto.Queries
     public class ProductoDto
     {
         public int ProductoId { get; set; }
+        public Guid? ClientId { get; set; }
         public string? Codigo { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public decimal PrecioVenta {  get; set; }

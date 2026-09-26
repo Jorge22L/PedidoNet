@@ -8,6 +8,7 @@ namespace Application.Producto.Commands
 {
     public class CrearProductoCommand
     {
+        public Guid ClientId { get; set; }
         public string? Codigo { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public decimal PrecioVenta { get; set; }

@@ -46,17 +46,16 @@ namespace Api.Controllers
         public async Task<ActionResult<ProductoDto>> Post([FromBody] CrearProductoCommand command, 
             CancellationToken cancellationToken)
         {
-
             var validation = await _crearProductoCommandValidator.ValidateAsync(command, cancellationToken);
 
-            if (!validation.IsValid)
+            if(!validation.IsValid)
             {
                 return BadRequest(FormatValidationErrors(validation));
             }
 
-            var id = await _productoService.CrearProductoAsync(command);
+            var producto = await _productoService.CrearProductoAsync(command, cancellationToken);
 
-            return CreatedAtAction(nameof(Get), new { id }, command); 
+            return CreatedAtAction(nameof(Get), new { id = producto.ProductoId }, producto);
         }
 
         [HttpPut("{id}")]

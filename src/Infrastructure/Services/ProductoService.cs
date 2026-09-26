@@ -96,11 +96,18 @@ namespace Infrastructure.Services
 
         public async Task<ProductoDto> CrearProductoAsync(CrearProductoCommand command, CancellationToken cancellationToken = default)
         {
+            var existente = await _productoRepository.ObtenerPorClientIdAsync(command.ClientId, cancellationToken);
+
+            if(existente is not null)
+            {
+                return _mapper.Map<ProductoDto>(existente);
+            }
+
             var producto = _mapper.Map<Producto>(command);
 
-            await _productoRepository.AgregarAsync(producto);
+            await _productoRepository.AgregarAsync(producto, cancellationToken);
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<ProductoDto>(producto);
         }

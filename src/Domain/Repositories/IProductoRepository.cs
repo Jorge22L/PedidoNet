@@ -9,12 +9,13 @@ namespace Domain.Repositories
     {
         Task<Producto?> ObtenerPorIdAsync(int id);
 
-        Task<List<Producto>> ObtenerPorIdsAsync(
-            IEnumerable<int> ids);
+        Task<Producto?> ObtenerPorClientIdAsync(Guid clientId, CancellationToken cancellationToken = default);
+
+        Task<List<Producto>> ObtenerPorIdsAsync(IEnumerable<int> ids);
 
         Task<List<Producto>> ObtenerTodosAsync();
 
-        Task AgregarAsync(Producto producto);
+        Task AgregarAsync(Producto producto, CancellationToken cancellationToken = default);
 
         void Eliminar(Producto producto);
     }

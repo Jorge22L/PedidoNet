@@ -17,14 +17,22 @@ namespace Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task AgregarAsync(Producto producto)
+        public async Task AgregarAsync(Producto producto, CancellationToken cancellationToken = default)
         {
-            await _context.Productos.AddAsync(producto);
+            await _context.Productos.AddAsync(producto, cancellationToken);
         }
 
         public void Eliminar(Producto producto)
         {
             _context.Productos.Remove(producto);
+        }
+
+        public async Task<Producto?> ObtenerPorClientIdAsync(Guid clientId, CancellationToken cancellationToken = default)
+        {
+            return await _context.Productos
+                .AsNoTracking()
+                .Include(p => p.Imagenes)
+                .FirstOrDefaultAsync(p => p.ClientId == clientId, cancellationToken);
         }
 
         public async Task<Producto?> ObtenerPorIdAsync(int id)

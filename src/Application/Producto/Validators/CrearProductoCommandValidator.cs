@@ -6,6 +6,10 @@ namespace Application.Producto.Commands.Validators
     {
         public CrearProductoCommandValidator()
         {
+            RuleFor(x => x.ClientId)
+                .NotEmpty()
+                .WithMessage("ClientId es requerido");
+
             RuleFor(x => x.Codigo)
                 .NotEmpty().WithMessage("Código es requerido")
                 .MaximumLength(20).WithMessage("Máximo 20 caracteres");
