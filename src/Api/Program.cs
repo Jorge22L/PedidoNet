@@ -20,6 +20,11 @@ using Domain.Repositories;
 using Infrastructure.Repositories;
 using Domain.Abstractions;
 using Api.Services;
+using Asp.Versioning;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Api.Configuration;
+using Asp.Versioning.ApiExplorer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +47,25 @@ builder.Services.AddEndpointsApiExplorer();
 
 // Evitar minimal APIs
 builder.Services.AddControllers();
+
+/*
+ * Obliga al cliente/consumidor a especificar la versión de la API
+ * en la URL, en vez de aceptar una API sin versión
+ */
+builder.Services
+    .AddApiVersioning(opt =>
+    {
+        opt.DefaultApiVersion = new Asp.Versioning.ApiVersion(1, 0);
+        opt.AssumeDefaultVersionWhenUnspecified = false;
+        opt.ReportApiVersions = true;
+        opt.ApiVersionReader = new UrlSegmentApiVersionReader();
+    })
+    .AddMvc()
+    .AddApiExplorer(opt =>
+    {
+        opt.GroupNameFormat = "'v'VVV";
+        opt.SubstituteApiVersionInUrl = true;
+    });
 
 // Agregando CORS
 builder.Services.AddCors(opt =>
@@ -119,15 +143,9 @@ builder.Services.AddAuthorizationBuilder()
             policy.RequireRole("Administrador", "Vendedor");
         });
 
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "API de Pedidos",
-        Version = "v1",
-        Description = "Documentación de la API de Pedidos"
-    });
-
     const string securitySchemeName = "Bearer";
 
     c.AddSecurityDefinition(
@@ -184,11 +202,17 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwagger();
 
+    var apiVersionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint(
-            "/swagger/v1/swagger.json",
-            "API v1");
+        foreach(var description in apiVersionProvider.ApiVersionDescriptions.Reverse())
+        {
+            c.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                $"PedidoNet API {description.GroupName.ToUpperInvariant()}"
+                );
+        }
     });
 }
 

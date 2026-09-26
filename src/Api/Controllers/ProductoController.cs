@@ -2,6 +2,7 @@
 using Application.Interfaces;
 using Application.Producto.Commands;
 using Application.Producto.Queries;
+using Asp.Versioning;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -10,8 +11,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Api.Controllers
 {
     [Authorize]
-    [Route("api/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class ProductoController : ControllerBase
     {
         private readonly IProductoService _productoService;

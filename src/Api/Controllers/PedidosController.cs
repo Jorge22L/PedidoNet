@@ -1,13 +1,15 @@
 ﻿using Application.Interfaces;
 using Application.Pedidos.Commands;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class PedidosController : ControllerBase
     {
         private readonly IPedidoService _pedidoService;
