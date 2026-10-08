@@ -108,6 +108,12 @@ var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOper
 
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key no está configurado");
 
+var entraTenantId = builder.Configuration["EntraId:TenantId"]
+    ?? throw new InvalidOperationException("EntraId:TenantId no está configurado");
+
+var entraApiClientId = builder.Configuration["EntraId:ApiClientId"]
+    ?? throw new InvalidOperationException("EntraId:ApiClientId no está configurado");
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -130,6 +136,35 @@ builder.Services
             ValidateLifetime = true,
 
             ClockSkew = TimeSpan.Zero
+        };
+    })
+
+    .AddJwtBearer(AuthSchemes.EntraId, options =>
+    {
+        // Descarga automáticamente las claves públicas de firma de Microsoft.
+        options.Authority = $"https://login.microsoftonline.com/{entraTenantId}/v2.0";
+
+        // Conserva los nombres originales de los claims: "oid", "scp", "preferred_username".
+        options.MapInboundClaims = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuers =
+            [
+                $"https://login.microsoftonline.com/{entraTenantId}/v2.0",
+                $"https://sts.windows.net/{entraTenantId}/"   // por si el token llega en v1
+            ],
+
+            ValidateAudience = true,
+            ValidAudiences =
+            [
+                entraApiClientId,
+                $"api://{entraApiClientId}"
+            ],
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(2)
         };
     });
 

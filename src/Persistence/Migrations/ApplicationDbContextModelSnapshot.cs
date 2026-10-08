@@ -260,6 +260,14 @@ namespace Persistence.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("EntraObjectId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("NombreUsuario")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -276,6 +284,14 @@ namespace Persistence.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("UsuarioId");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("[Email] IS NOT NULL");
+
+                    b.HasIndex("EntraObjectId")
+                        .IsUnique()
+                        .HasFilter("[EntraObjectId] IS NOT NULL");
 
                     b.HasIndex("NombreUsuario")
                         .IsUnique();

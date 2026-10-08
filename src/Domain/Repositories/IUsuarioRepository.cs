@@ -8,5 +8,8 @@ namespace Domain.Repositories
     public interface IUsuarioRepository
     {
         Task<Usuario?> ObtenerActivoPorNombreAsync(string nombreUsuario);
+        Task<Usuario?> ObtenerActivoPorEntraIdAsync(string entraObjectId);
+
+        Task<Usuario?> ObtenerActivoPorEmailAsync(string email);
     }
 }

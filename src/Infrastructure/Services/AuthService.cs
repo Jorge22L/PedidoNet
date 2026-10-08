@@ -53,87 +53,70 @@ namespace Infrastructure.Services
         }
 
 
-        public async Task<LoginResponse?>
-        LoginAsync(LoginRequest request)
+        public async Task<LoginResponse?>LoginAsync(LoginRequest request)
         {
-            var usuario =
-                await _usuarioRepository
-                    .ObtenerActivoPorNombreAsync(
-                        request.NombreUsuario);
+            var usuario = await _usuarioRepository.ObtenerActivoPorNombreAsync(request.NombreUsuario);
 
             if (usuario == null)
                 return null;
 
-            var resultado =
-                _passwordHasher
-                    .VerifyHashedPassword(
-                        usuario,
-                        usuario.PasswordHash,
-                        request.Password);
+            var resultado = _passwordHasher.VerifyHashedPassword(usuario,usuario.PasswordHash,request.Password);
 
-            if (
-                resultado ==
-                PasswordVerificationResult.Failed)
+            if (resultado ==PasswordVerificationResult.Failed)
             {
                 return null;
             }
 
-            var accessToken =
-                GenerarAccessToken(usuario);
+            return await CrearSesionAsync(usuario);
+        }
 
-            var refreshToken =
-                GenerarRefreshToken();
+        private async Task<LoginResponse> CrearSesionAsync(Usuario usuario)
+        {
+            var accessToken = GenerarAccessToken(usuario);
 
-            var refreshExpirationDays =
-                _configuration.GetValue<int>(
-                    "Jwt:RefreshTokenExpirationDays");
+            var refreshToken = GenerarRefreshToken();
 
-            var refreshExpiraEn =
-                DateTime.UtcNow.AddDays(
-                    refreshExpirationDays);
+            var refreshExpirationDays =_configuration.GetValue<int>("Jwt:RefreshTokenExpirationDays");
 
-            var refreshTokenEntity =
-                new RefreshToken
-                {
-                    UsuarioId =
-                        usuario.UsuarioId,
+            var refreshExpiraEn =DateTime.UtcNow.AddDays(refreshExpirationDays);
 
-                    TokenHash =
-                        HashToken(refreshToken),
+            //var refreshTokenEntity =
+            //    new RefreshToken
+            //    {
+            //        UsuarioId = usuario.UsuarioId,
 
-                    CreadoEn =
-                        DateTime.UtcNow,
+            //        TokenHash = HashToken(refreshToken),
 
-                    ExpiraEn =
-                        refreshExpiraEn
-                };
+            //        CreadoEn = DateTime.UtcNow,
 
-            await _refreshTokenRepository
-                .AgregarAsync(
-                    refreshTokenEntity);
+            //        ExpiraEn = refreshExpiraEn
+            //    };
 
-            await _unitOfWork
-                .SaveChangesAsync();
+            //await _refreshTokenRepository.AgregarAsync(refreshTokenEntity);
+
+            await _refreshTokenRepository.AgregarAsync(new RefreshToken
+            {
+                UsuarioId = usuario.UsuarioId,
+                TokenHash = HashToken(refreshToken),
+                CreadoEn = DateTime.UtcNow,
+                ExpiraEn = refreshExpiraEn
+            });
+
+            await _unitOfWork.SaveChangesAsync();
 
             return new LoginResponse
             {
-                AccessToken =
-                    accessToken.Token,
+                AccessToken = accessToken.Token,
 
-                ExpiraEn =
-                    accessToken.ExpiraEn,
+                ExpiraEn = accessToken.ExpiraEn,
 
-                RefreshToken =
-                    refreshToken,
+                RefreshToken = refreshToken,
 
-                RefreshTokenExpiraEn =
-                    refreshExpiraEn,
+                RefreshTokenExpiraEn = refreshExpiraEn,
 
-                NombreUsuario =
-                    usuario.NombreUsuario,
+                NombreUsuario = usuario.NombreUsuario,
 
-                Rol =
-                    usuario.Rol
+                Rol = usuario.Rol
             };
         }
 
@@ -374,5 +357,30 @@ namespace Infrastructure.Services
                 expiraEn);
         }
 
+        public async Task<LoginResponse?> LoginEntraAsync(EntraUserInfo usuarioEntra)
+        {
+            var usuario = await _usuarioRepository.ObtenerActivoPorEntraIdAsync(usuarioEntra.ObjectId);
+            if(usuario is null && !string.IsNullOrWhiteSpace(usuarioEntra.Email))
+            {
+                usuario = await _usuarioRepository.ObtenerActivoPorEmailAsync(usuarioEntra.Email);
+
+                if (usuario is null)
+                    return null;
+
+                if(usuario.EntraObjectId is not null && usuario.EntraObjectId != usuarioEntra.ObjectId)
+                {
+                    return null;
+                }
+
+                usuario.EntraObjectId = usuarioEntra.ObjectId;
+            }
+
+            if (usuario is null)
+                return null;
+
+            // Mismo JWT + refresh token en login
+            // El rol sale de la tabla usuarios
+            return await CrearSesionAsync(usuario);
+        }
     }
 }

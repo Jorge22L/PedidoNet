@@ -1,10 +1,10 @@
-services: 
+services:
 
     pedidonet-api:
         build:
             context: .
             dockerfile: Dockerfile
-        
+
         container_name: pedidonet-api
 
         ports:
@@ -14,6 +14,10 @@ services:
             ASPNETCORE_ENVIRONMENT: Production
             ASPNETCORE_URLS: http://+:8080
 
+            # Microsoft Entra ID (reemplaza con los valores de tu app registration)
+            EntraId__TenantId: "b7c36714-ed50-4acf-81db-dca76ad96a8c"
+            EntraId__ApiClientId: "210bdb7d-597c-45ac-baf9-688ccc91831d"
+
             Jwt__Issuer: PedidoNet
             Jwt__Audience: PedidoNetApi
             Jwt__ExpirationMinutes: "60"
@@ -22,6 +26,8 @@ services:
         secrets:
             - ConnectionStrings__DefaultConnection
             - Jwt__Key
+            # Descomenta si tu app usa ClientSecret de Entra ID
+            # - EntraId__ClientSecret
 
         volumes:
             - ./uploads:/app/wwwroot/uploads
@@ -38,6 +44,10 @@ secrets:
 
     Jwt__Key:
         file: ./docker-secrets/Jwt__Key
+
+    # Descomenta si tu app usa ClientSecret de Entra ID
+    # EntraId__ClientSecret:
+    #     file: ./docker-secrets/EntraId__ClientSecret
 
 networks:
 

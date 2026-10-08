@@ -16,6 +16,19 @@ namespace Infrastructure.Repositories
         {
             _context = context;
         }
+
+        public async Task<Usuario?> ObtenerActivoPorEmailAsync(string email)
+        {
+            var normalizado = email.Trim().ToLower();
+
+            return await _context.Usuarios.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == normalizado && u.Activo);
+        }
+
+        public async Task<Usuario?> ObtenerActivoPorEntraIdAsync(string entraObjectId)
+        {
+            return await _context.Usuarios.FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId && u.Activo);
+        }
+
         public async Task<Usuario?> ObtenerActivoPorNombreAsync(string nombreUsuario)
         {
             return await _context.Usuarios

@@ -30,6 +30,20 @@ namespace Persistence.Configurations
 
             builder.Property(x => x.Activo)
                 .IsRequired();
+
+            builder.Property(x => x.Email)
+                .HasMaxLength(256);
+
+            builder.HasIndex(x => x.Email)
+                .IsUnique()
+                .HasFilter("[Email] IS NOT NULL");
+
+            builder.Property(x => x.EntraObjectId)
+                .HasMaxLength(64);
+
+            builder.HasIndex(x => x.EntraObjectId)
+                .IsUnique()
+                .HasFilter("[EntraObjectId] IS NOT NULL");
         }
     }
 }
