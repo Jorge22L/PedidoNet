@@ -28,6 +28,7 @@ using Asp.Versioning.ApiExplorer;
 using Api.RateLimiting;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using Infrastructure.Reportes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,6 +100,9 @@ builder.Services.AddScoped<IPedidoService, PedidoService>();
 builder.Services.AddScoped<IPedidoWriteRepository, PedidoWriteRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
+
+builder.Services.AddSingleton<RdlcRenderer>();
+builder.Services.AddScoped<IPedidoReporteService, ReportePedidoService>();
 
 // Agregando JWT
 

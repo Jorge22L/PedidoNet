@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition"
+        xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="PedidoNetDataSource">
+      <ConnectionProperties>
+        <DataProvider>System.Data.DataSet</DataProvider>
+        <ConnectString>/* Local Connection */</ConnectString>
+      </ConnectionProperties>
+      <rd:DataSourceID>5f6a2c1e-3b7d-4f0a-9c1e-1a2b3c4d5e01</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="Pedidos">
+      <Query>
+        <DataSourceName>PedidoNetDataSource</DataSourceName>
+        <CommandText>/* Local Query */</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="PedidoId"><DataField>PedidoId</DataField><rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="Fecha"><DataField>Fecha</DataField><rd:TypeName>System.DateTime</rd:TypeName></Field>
+        <Field Name="Cliente"><DataField>Cliente</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Cedula"><DataField>Cedula</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="FormaPago"><DataField>FormaPago</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Estado"><DataField>Estado</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="CantidadProductos"><DataField>CantidadProductos</DataField><rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="SubTotal"><DataField>SubTotal</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Descuento"><DataField>Descuento</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="IVA"><DataField>IVA</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Total"><DataField>Total</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <Height>2in</Height>
+        <Style />
+      </Body>
+      <Width>10in</Width>
+      <Page>
+        <PageHeight>8.5in</PageHeight>
+        <PageWidth>11in</PageWidth>
+        <LeftMargin>0.5in</LeftMargin>
+        <RightMargin>0.5in</RightMargin>
+        <TopMargin>0.5in</TopMargin>
+        <BottomMargin>0.5in</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="Titulo">
+      <DataType>String</DataType><Nullable>true</Nullable><AllowBlank>true</AllowBlank><Prompt>Titulo</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="Filtros">
+      <DataType>String</DataType><Nullable>true</Nullable><AllowBlank>true</AllowBlank><Prompt>Filtros</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="GeneradoPor">
+      <DataType>String</DataType><Nullable>true</Nullable><AllowBlank>true</AllowBlank><Prompt>GeneradoPor</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="FechaGeneracion">
+      <DataType>String</DataType><Nullable>true</Nullable><AllowBlank>true</AllowBlank><Prompt>FechaGeneracion</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>1</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition><ColumnIndex>0</ColumnIndex><RowIndex>0</RowIndex><ParameterName>Titulo</ParameterName></CellDefinition>
+        <CellDefinition><ColumnIndex>1</ColumnIndex><RowIndex>0</RowIndex><ParameterName>Filtros</ParameterName></CellDefinition>
+        <CellDefinition><ColumnIndex>2</ColumnIndex><RowIndex>0</RowIndex><ParameterName>GeneradoPor</ParameterName></CellDefinition>
+        <CellDefinition><ColumnIndex>3</ColumnIndex><RowIndex>0</RowIndex><ParameterName>FechaGeneracion</ParameterName></CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+  <Language>es-NI</Language>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+  <rd:ReportID>0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e01</rd:ReportID>
+</Report>
