@@ -16,6 +16,9 @@ namespace Persistence.Configurations
             builder.HasKey(c => c.ClienteId);
             builder.Property(c => c.Nombre).IsRequired().HasMaxLength(100);
             builder.HasIndex(c => c.Cedula).IsUnique();
+
+            builder.Property(c => c.Latitud).HasPrecision(9, 6);
+            builder.Property(c => c.Longitud).HasPrecision(9, 6);
         }
     }
 }

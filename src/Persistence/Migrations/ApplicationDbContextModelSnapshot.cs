@@ -39,6 +39,14 @@ namespace Persistence.Migrations
                     b.Property<bool>("EsConsumidorFinal")
                         .HasColumnType("bit");
 
+                    b.Property<decimal?>("Latitud")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<decimal?>("Longitud")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(100)

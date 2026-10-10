@@ -13,6 +13,8 @@ namespace Application.Clientes.Commands
         public string? Telefono { get; set; }
         public string? Direccion { get; set; }
         public bool EsConsumidorFinal {  get; set; }
+        public decimal? Latitud { get; set; }
+        public decimal? Longitud { get; set; }
 
     }
 }

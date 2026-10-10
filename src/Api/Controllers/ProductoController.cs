@@ -126,6 +126,19 @@ namespace Api.Controllers
             return Ok(resultado);
         }
 
+        [HttpDelete("{id:int}/imagenes/{imagenId:int}")]
+        public async Task<IActionResult> EliminarImagen(int id, int imagenId, CancellationToken cancellationToken)
+        {
+            var eliminado = await _productoService.EliminarImagenAsync(id, imagenId, cancellationToken);
+
+            if (!eliminado)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
+
 
         private object FormatValidationErrors(FluentValidation.Results.ValidationResult validationResult)
         {

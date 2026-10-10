@@ -2,6 +2,7 @@
 using Application.Clientes.Commands;
 using Application.Interfaces;
 using Asp.Versioning;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -14,10 +15,15 @@ namespace Api.Controllers
     public class ClientesController : ControllerBase
     {
         private readonly IClienteService _clienteService;
+        private readonly IValidator<CrearClienteCommand> _crearValidator;
+        private readonly IValidator<ActualizarClienteCommand> _actualizarValidator;
 
-        public ClientesController(IClienteService clienteService)
+        public ClientesController(IClienteService clienteService, IValidator<CrearClienteCommand> crearValidator,
+            IValidator<ActualizarClienteCommand> actualizarValidator)
         {
             _clienteService = clienteService;
+            _crearValidator = crearValidator;
+            _actualizarValidator = actualizarValidator;
         }
 
         [HttpGet]
@@ -42,13 +48,25 @@ namespace Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CrearClienteCommand command)
         {
+            var validation = await _crearValidator.ValidateAsync(command);
+            if (!validation.IsValid)
+            {
+                return BadRequest(new {message = string.Join(", ", validation.Errors.Select(e => e.ErrorMessage))});
+            }
+
             var id = await _clienteService.CrearClienteAsync(command);
-            return CreatedAtAction(nameof(Get), new {id}, command);
+            return CreatedAtAction(nameof(Get), new { id }, command);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] ActualizarClienteCommand command)
         {
+            var validation = await _actualizarValidator.ValidateAsync(command);
+            if (!validation.IsValid)
+            {
+                return BadRequest(new { message = string.Join(", ", validation.Errors.Select(e => e.ErrorMessage)) });
+            }
+
             var actualizado = await _clienteService.ActualizarClienteAsync(id, command);
             if(!actualizado)
             {

@@ -112,9 +112,61 @@ namespace Infrastructure.Services
             return _mapper.Map<ProductoDto>(producto);
         }
 
-        public Task<bool> EliminarImagenAsync(int productoId, int imagenId, CancellationToken cancellationToken = default)
+        public async Task<bool> EliminarImagenAsync(int productoId, int imagenId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var producto = await _productoRepository.ObtenerPorIdAsync(productoId);
+
+            if (producto is null)
+            {
+                return false;
+            }
+
+            var imagen = producto.Imagenes
+                .FirstOrDefault(x => x.ProductoImagenId == imagenId);
+
+            if (imagen is null)
+            {
+                return false;
+            }
+
+            var ruta = imagen.Ruta;
+            var eraPrincipal = imagen.EsPrincipal;
+
+            /* La relación es obligatoria (ProductoId no nullable):
+               al quitarla de la colección EF elimina el registro. */
+            producto.Imagenes.Remove(imagen);
+
+            /* Si se eliminó la principal, la imagen más antigua
+               que quede pasa a ser la principal. */
+            if (eraPrincipal)
+            {
+                var siguiente = producto.Imagenes
+                    .OrderBy(x => x.FechaCreacion)
+                    .FirstOrDefault();
+
+                if (siguiente is not null)
+                {
+                    siguiente.EsPrincipal = true;
+                }
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            /* El archivo se borra DESPUÉS de confirmar en la base de datos.
+               Si falla, solo queda un archivo huérfano; nunca un registro
+               apuntando a un archivo inexistente. */
+            try
+            {
+                await _fileStorage.EliminarAsync(ruta, cancellationToken);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            return true;
         }
 
         public async Task<bool> EliminarProductoAsync(int id)
